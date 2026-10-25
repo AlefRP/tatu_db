@@ -3,11 +3,16 @@
     🐾 Instalador do Tatu DB para Windows.
 
 .DESCRIPTION
-    Instala o Tatu DB num ambiente virtual só dele e cria o comando `tatu`.
-    Não precisa de administrador e não mexe no Python do sistema.
+    Cria o comando `tatu` sem precisar de administrador. Dois modos:
+      - Python:  se houver Python 3.10+, instala num ambiente virtual só do Tatu;
+      - Binario: sem Python, baixa o executável pronto do último Release.
+    Por padrão o modo é escolhido sozinho.
 
 .EXAMPLE
     irm https://raw.githubusercontent.com/AlefRP/tatu_db/main/scripts/install.ps1 | iex
+
+.EXAMPLE
+    & ([scriptblock]::Create((irm https://raw.githubusercontent.com/AlefRP/tatu_db/main/scripts/install.ps1))) -Binario
 
 .EXAMPLE
     .\scripts\install.ps1              # de dentro do repositório: instala a cópia local
@@ -16,12 +21,14 @@
     .\scripts\install.ps1 -Uninstall   # remove tudo
 
 .NOTES
-    Variáveis opcionais: TATU_REF (branch ou tag, padrão main), TATU_HOME (pasta de
-    instalação, padrão %LOCALAPPDATA%\tatu-db) e TATU_PYTHON (qual Python usar).
+    Variáveis opcionais: TATU_REF (versão, ex. v0.1.0, ou branch; padrão: main / último
+    Release), TATU_HOME (pasta, padrão %LOCALAPPDATA%\tatu-db) e TATU_PYTHON (qual Python usar).
 #>
 param(
     [switch]$Uninstall,
     [switch]$NoPath,
+    [switch]$Binario,
+    [switch]$Python,
     [string]$Ref = $(if ($env:TATU_REF) { $env:TATU_REF } else { "main" })
 )
 
@@ -49,6 +56,8 @@ $RepoUrl = "https://github.com/AlefRP/tatu_db"
 $TatuHome = if ($env:TATU_HOME) { $env:TATU_HOME } else { Join-Path $env:LOCALAPPDATA "tatu-db" }
 $Venv = Join-Path $TatuHome "venv"
 $BinDir = Join-Path $TatuHome "bin"
+$Shim = Join-Path $BinDir "tatu.cmd"     # modo Python: "atalho" para o tatu.exe do ambiente virtual
+$Exe = Join-Path $BinDir "tatu.exe"      # modo Binario: o executável pronto
 
 function Write-Step($Text) { Write-Host "==> " -ForegroundColor DarkYellow -NoNewline; Write-Host $Text }
 function Write-Ok($Text) { Write-Host "OK  " -ForegroundColor Green -NoNewline; Write-Host $Text }
@@ -82,11 +91,21 @@ function Set-UserPathEntries($Entries) {
     [Environment]::SetEnvironmentVariable("TATU_DB_AVISO", $null, "User")
 }
 
-# ─────────────────────────── desinstalar ───────────────────────────
+# Apaga só o que é do Tatu (nunca a pasta inteira: TATU_HOME pode ter outras coisas).
+function Remove-Installation {
+    foreach ($path in @($Venv, $Shim, $Exe)) {
+        if (Test-Path $path) { Remove-Item -Recurse -Force $path }
+    }
+    foreach ($dir in @($BinDir, $TatuHome)) {
+        if ((Test-Path $dir) -and -not (Get-ChildItem -Force $dir)) { Remove-Item -Force $dir }
+    }
+}
+
+# --------------------------- desinstalar ---------------------------
 
 if ($Uninstall) {
     Write-Step "Removendo o Tatu DB de $TatuHome"
-    if (Test-Path $TatuHome) { Remove-Item -Recurse -Force $TatuHome }
+    Remove-Installation
     $entries = Get-UserPathEntries
     $remaining = @($entries | Where-Object { $_.TrimEnd("\") -ne $BinDir.TrimEnd("\") })
     if ($remaining.Count -ne $entries.Count) {
@@ -97,7 +116,7 @@ if ($Uninstall) {
     return
 }
 
-# ─────────────────────────── instalar ───────────────────────────
+# --------------------------- modo Python ---------------------------
 
 function Find-Python {
     # Cada candidato é um comando + argumentos ("py -3" usa o lançador oficial do Windows)
@@ -107,15 +126,15 @@ function Find-Python {
     $candidates += , @("python")
     $candidates += , @("python3")
     foreach ($candidate in $candidates) {
-        $exe = $candidate[0]
-        if (-not (Get-Command $exe -ErrorAction SilentlyContinue)) { continue }
+        $command = $candidate[0]
+        if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { continue }
         $prefix = @($candidate | Select-Object -Skip 1)
-        $check = "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)"
+        $check = "import sys, venv, ensurepip; sys.exit(0 if sys.version_info >= (3, 10) else 1)"
         try {
-            & $exe @prefix -c $check 2>$null | Out-Null
+            & $command @prefix -c $check 2>$null | Out-Null
             if ($LASTEXITCODE -eq 0) {
                 # Pergunta ao próprio Python onde ele mora: evita o atalho falso da Microsoft Store
-                $path = & $exe @prefix -c "import sys; print(sys.executable)"
+                $path = & $command @prefix -c "import sys; print(sys.executable)"
                 if ($LASTEXITCODE -eq 0 -and $path) { return $path.Trim() }
             }
         } catch { }
@@ -135,37 +154,82 @@ function Find-Source {
     return "$RepoUrl/archive/$Ref.zip"
 }
 
-Show-Armadillo
-Write-Step "Procurando Python 3.10 ou mais novo"
-$python = Find-Python
-if (-not $python) {
-    Stop-WithError ("Não encontrei Python 3.10+. Instale em https://www.python.org/downloads/ " +
-        "(ou: winget install Python.Python.3.13) e rode este instalador de novo.")
+function Install-WithPython($PythonExe) {
+    $pythonVersion = & $PythonExe -c "import platform; print(platform.python_version())"
+    Write-Ok "Usando $PythonExe ($pythonVersion)"
+    $source = Find-Source
+    Write-Step "Criando o ambiente virtual em $Venv"
+    Remove-Installation
+    New-Item -ItemType Directory -Force -Path $TatuHome | Out-Null
+    # "| Out-Host": o que um programa imprime dentro de uma função viraria o valor de retorno dela
+    & $PythonExe -m venv $Venv | Out-Host
+    if ($LASTEXITCODE -ne 0) { Stop-WithError "Não consegui criar o ambiente virtual." }
+
+    Write-Step "Instalando o Tatu DB ($source)"
+    & (Join-Path $Venv "Scripts\python.exe") -m pip install --quiet --disable-pip-version-check --upgrade $source |
+        Out-Host
+    if ($LASTEXITCODE -ne 0) { Stop-WithError "A instalação falhou. Verifique sua conexão com a internet e tente de novo." }
+
+    # Um tatu.cmd numa pasta só dele: assim o PATH não ganha o python.exe do ambiente virtual
+    New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+    Set-Content -Path $Shim -Encoding ascii -Value "@echo off`r`n`"%~dp0..\venv\Scripts\tatu.exe`" %*"
+    return $Shim
 }
-$pythonVersion = & $python -c "import platform; print(platform.python_version())"
-Write-Ok "Usando $python ($pythonVersion)"
 
-$source = Find-Source
-Write-Step "Criando o ambiente virtual em $Venv"
-if (Test-Path $Venv) { Remove-Item -Recurse -Force $Venv }
-New-Item -ItemType Directory -Force -Path $TatuHome | Out-Null
-& $python -m venv $Venv
-if ($LASTEXITCODE -ne 0) { Stop-WithError "Não consegui criar o ambiente virtual." }
+# --------------------------- modo Binario ---------------------------
 
-Write-Step "Instalando o Tatu DB ($source)"
-$venvPython = Join-Path $Venv "Scripts\python.exe"
-& $venvPython -m pip install --quiet --disable-pip-version-check --upgrade $source
-if ($LASTEXITCODE -ne 0) { Stop-WithError "A instalação falhou. Verifique sua conexão com a internet e tente de novo." }
+function Install-Binary {
+    # Executável x64: também roda no Windows ARM, pela emulação do próprio Windows
+    $name = "tatu-windows-x86_64"
+    $url = if ($Ref -match '^v\d') { "$RepoUrl/releases/download/$Ref/$name.zip" }
+           else { "$RepoUrl/releases/latest/download/$name.zip" }
+    Write-Step "Baixando o executável ($url)"
+    $tmp = Join-Path ([IO.Path]::GetTempPath()) ("tatu-" + [guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $tmp | Out-Null
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor
+            [Net.SecurityProtocolType]::Tls12
+        $ProgressPreference = "SilentlyContinue"  # a barra de progresso deixa o download do 5.1 lentíssimo
+        try {
+            Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile (Join-Path $tmp "tatu.zip")
+        } catch {
+            Stop-WithError "Não consegui baixar $url ($($_.Exception.Message))"
+        }
+        Expand-Archive -Path (Join-Path $tmp "tatu.zip") -DestinationPath $tmp -Force
+        Remove-Installation
+        New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
+        Copy-Item (Join-Path $tmp "$name\tatu.exe") $Exe -Force
+    } finally {
+        Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
+    }
+    return $Exe
+}
 
-# Um "atalho" tatu.cmd numa pasta só dele: assim o PATH não ganha o python.exe do ambiente virtual
-New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
-$shim = Join-Path $BinDir "tatu.cmd"
-Set-Content -Path $shim -Encoding ascii -Value "@echo off`r`n`"%~dp0..\venv\Scripts\tatu.exe`" %*"
-$version = & $shim --version
-Write-Ok "$version instalado em $shim"
+# --------------------------- instalar ---------------------------
+
+Show-Armadillo
+$mode = if ($Binario) { "binario" } elseif ($Python) { "python" } else { "auto" }
+$pythonExe = $null
+if ($mode -ne "binario") {
+    Write-Step "Procurando Python 3.10 ou mais novo"
+    $pythonExe = Find-Python
+}
+if ($mode -eq "python" -and -not $pythonExe) {
+    Stop-WithError ("Não encontrei Python 3.10+. Instale em https://www.python.org/downloads/ " +
+        "(ou: winget install Python.Python.3.13), ou rode com -Binario para usar o executável pronto.")
+}
+if ($mode -eq "auto" -and -not $pythonExe) {
+    Write-Step "Python 3.10+ não encontrado: vou instalar o executável pronto (não precisa de Python)"
+    $mode = "binario"
+}
+$command = if ($mode -eq "binario") { Install-Binary } else { Install-WithPython $pythonExe }
+
+$version = & $command --version
+if ($LASTEXITCODE -ne 0) { Stop-WithError "O comando tatu não funcionou depois de instalado." }
+Write-Ok "$version instalado em $command"
 
 if ($NoPath) {
-    Write-Host "`nPATH não alterado (-NoPath). Rode com:  $shim"
+    Write-Host "`nPATH não alterado (-NoPath). Rode com:  $command"
     return
 }
 $entries = Get-UserPathEntries
