@@ -60,12 +60,22 @@ peças de um banco "de gente grande" — cada uma num arquivo, cada uma explicad
 
 ## 📦 Instalação
 
-| Sistema | Um comando só (precisa de Python 3.10+) | Sem Python: baixe dos [Releases](https://github.com/AlefRP/tatu_db/releases/latest) |
-|---|---|---|
-| 🪟 **Windows** | `irm https://raw.githubusercontent.com/AlefRP/tatu_db/main/scripts/install.ps1 \| iex` | `…-windows-x86_64-setup.exe` ou `.zip` portátil |
-| 🍎 **macOS** | `curl -fsSL https://raw.githubusercontent.com/AlefRP/tatu_db/main/scripts/install.sh \| sh` | `…-macos-arm64.pkg` ou `.tar.gz` |
-| 🐧 **Linux** | `curl -fsSL https://raw.githubusercontent.com/AlefRP/tatu_db/main/scripts/install.sh \| sh` | `tatu-db_…_amd64.deb` ou `.tar.gz` |
-| 🐍 **qualquer um** | `pipx install git+https://github.com/AlefRP/tatu_db.git` | |
+**Baixe o instalador** (versão mais recente, não precisa de Python):
+
+| 🪟 Windows | 🍎 macOS | 🐧 Linux |
+|:-:|:-:|:-:|
+| [**setup.exe**](https://github.com/AlefRP/tatu_db/releases/latest/download/tatu-windows-x86_64-setup.exe) | [**.pkg Apple Silicon**](https://github.com/AlefRP/tatu_db/releases/latest/download/tatu-macos-arm64.pkg) · [**.pkg Intel**](https://github.com/AlefRP/tatu_db/releases/latest/download/tatu-macos-x86_64.pkg) | [**.deb**](https://github.com/AlefRP/tatu_db/releases/latest/download/tatu-linux-x86_64.deb) · [**.rpm**](https://github.com/AlefRP/tatu_db/releases/latest/download/tatu-linux-x86_64.rpm) · [ARM64](docs/instalacao.md#-instaladores) |
+
+**Ou instale pelo terminal**, com uma linha (usa o seu Python se houver; senão, baixa o executável pronto):
+
+| Sistema | Comando |
+|---|---|
+| 🪟 **Windows** | `irm https://raw.githubusercontent.com/AlefRP/tatu_db/main/scripts/install.ps1 \| iex` |
+| 🍎 **macOS** / 🐧 **Linux** | `curl -fsSL https://raw.githubusercontent.com/AlefRP/tatu_db/main/scripts/install.sh \| sh` |
+| 🐍 **com pipx** | `pipx install git+https://github.com/AlefRP/tatu_db.git` |
+
+Todas as versões, notas e arquivos (inclusive executáveis portáteis e `SHA256SUMS.txt`) ficam nos
+**[Releases](https://github.com/AlefRP/tatu_db/releases)**.
 
 Vai **estudar o código**? Então nem instale — clone e rode direto:
 
@@ -269,9 +279,9 @@ tatu_db/
 ├── tests/                 🧪 88 testes (unittest)
 ├── docs/                  📚 trilha de aprendizado, instalação, FAQ e ilustrações
 ├── examples/              🐍 exemplo de uso pelo Python
-├── scripts/               🛠️ instaladores (install.sh, install.ps1) e verificador da documentação
-├── packaging/             📦 executáveis (PyInstaller), .deb, .pkg, setup.exe (Inno Setup) e ícones
-├── .github/               ⚙️ CI, pacotes, release, Claude, modelos de issue e PR
+├── scripts/               🛠️ instaladores (install.sh, install.ps1), versão, notas e verificador das docs
+├── packaging/             📦 executáveis (PyInstaller), setup.exe (Inno Setup), .pkg, .deb, .rpm e ícones
+├── .github/               ⚙️ CI, pacotes, nova versão, release, Claude, modelos de issue e PR
 ├── .claude/               🤖 skills, agentes, hooks e permissões do Claude Code
 └── CLAUDE.md              🤖 o "manual do projeto" que o Claude Code lê primeiro
 ```
@@ -285,7 +295,8 @@ python scripts/check_docs.py               # links, âncoras, SVGs e números da
 ```
 
 O [CI](.github/workflows/ci.yml) roda tudo isso a cada push, em **Windows, macOS e Linux, do Python 3.10 ao 3.14**,
-testa os dois instaladores de verdade e gera todos os pacotes (`.exe`, `.pkg`, `.deb`, executáveis e wheel).
+testa os dois instaladores de verdade e gera todos os pacotes (`setup.exe`, `.pkg`, `.deb`, `.rpm`, executáveis e wheel).
+Uma versão nova sai com um clique: **Actions → Nova versão** (veja o [guia de contribuição](CONTRIBUTING.md#-lançando-uma-versão)).
 
 Os testes também são uma ótima documentação: [`test_queries.py`](tests/test_queries.py) mostra o que cada recurso do SQL faz,
 e [`test_transactions.py`](tests/test_transactions.py) mostra o `ROLLBACK` trabalhando.

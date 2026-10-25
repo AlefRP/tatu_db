@@ -39,12 +39,17 @@ A primeira versão do tatu saiu da toca! 🐾
 
 ### 📦 Instalação
 
-- Instaladores de uma linha: `install.sh` (Linux e macOS) e `install.ps1` (Windows).
-- Executáveis sem Python (PyInstaller), `setup.exe` (Windows), `.pkg` (macOS) e `.deb` (Linux).
+- Instaladores de uma linha: `install.sh` (Linux e macOS) e `install.ps1` (Windows), que usam o
+  Python da máquina ou, se não houver, baixam o executável pronto.
+- Executáveis sem Python (PyInstaller) e instaladores: `setup.exe` (Windows), `.pkg` (macOS Apple
+  Silicon e Intel), `.deb` e `.rpm` (Linux x64 e ARM64).
+- Arquivos com nome fixo, para links que sempre baixam a versão mais nova, e `SHA256SUMS.txt`.
 
 ### ⚙️ Projeto
 
-- 88 testes; CI em Windows, macOS e Linux com Python 3.10 a 3.14; workflows de pacotes e release.
+- 88 testes; CI em Windows, macOS e Linux com Python 3.10 a 3.14.
+- Lançamento com um clique no GitHub Actions (workflow "Nova versão"): sobe a versão, fecha o
+  CHANGELOG, cria a tag, publica o Release e instala o que foi publicado em cada sistema para conferir.
 - Configuração para o Claude Code: `CLAUDE.md`, skills, agentes, hook de testes e workflow `@claude`.
 
 [Não lançado]: https://github.com/AlefRP/tatu_db/compare/v0.1.0...HEAD

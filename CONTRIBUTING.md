@@ -103,6 +103,7 @@ python -m pip install pyinstaller build
 python -m build                          # wheel + sdist em dist/
 python packaging/build_binary.py         # executável + .zip/.tar.gz em dist/release/
 sh packaging/linux/build_deb.sh          # Linux: .deb
+sh packaging/linux/build_rpm.sh          # Linux: .rpm (precisa do rpmbuild)
 sh packaging/macos/build_pkg.sh          # macOS: .pkg
 iscc /DAppVersion=0.1.0 packaging\windows\tatu.iss   # Windows: setup.exe (precisa do Inno Setup 6)
 ```
@@ -114,26 +115,49 @@ iscc /DAppVersion=0.1.0 packaging\windows\tatu.iss   # Windows: setup.exe (preci
 | [`packaging/build_binary.py`](packaging/build_binary.py) | executável com PyInstaller + teste de fumaça |
 | [`packaging/windows/tatu.iss`](packaging/windows/tatu.iss) | instalador do Windows (Inno Setup) — salvo **com BOM**, para os acentos |
 | [`packaging/linux/build_deb.sh`](packaging/linux/build_deb.sh) | pacote Debian/Ubuntu |
+| [`packaging/linux/build_rpm.sh`](packaging/linux/build_rpm.sh) | pacote Fedora/RHEL/openSUSE |
+| [`scripts/bump_version.py`](scripts/bump_version.py) | sobe a versão e fecha o CHANGELOG (usado pelo workflow "Nova versão") |
+| [`scripts/release_notes.py`](scripts/release_notes.py) | monta as notas do Release com a tabela de downloads |
 | [`packaging/macos/build_pkg.sh`](packaging/macos/build_pkg.sh) | pacote do macOS |
 | [`packaging/icons/`](packaging/icons/) | ícone (SVG de origem, PNG e ICO) |
 
 ## 🚀 Lançando uma versão
 
-1. Atualize `__version__` em [`tatu/__init__.py`](tatu/__init__.py) — é a **única** fonte da versão
-   (o `pyproject.toml` lê dali).
-2. Em [`CHANGELOG.md`](CHANGELOG.md), troque `## [Não lançado]` por `## [X.Y.Z] - AAAA-MM-DD` e abra uma
-   seção nova de "Não lançado" acima.
-3. Commit (`chore: versão X.Y.Z`), tag e push:
+A versão mora **só** em [`tatu/__init__.py`](tatu/__init__.py) (`__version__`); o `pyproject.toml` lê dali.
+O jeito recomendado de lançar é pelo próprio GitHub, com um clique:
 
-   ```bash
-   git tag vX.Y.Z
-   git push origin main vX.Y.Z
-   ```
+1. Vá em **Actions → Nova versão → Run workflow**.
+2. Escolha o tipo (ou digite a versão exata):
 
-4. O workflow [`release.yml`](.github/workflows/release.yml) confere se a tag bate com a versão, gera todos
-   os pacotes, testa cada instalador e cria o **GitHub Release** com as notas do CHANGELOG.
-5. *(Opcional)* Para publicar também no PyPI: configure o *trusted publishing* do projeto no PyPI
-   (ambiente `pypi`) e crie a variável de repositório `PUBLICAR_NO_PYPI = true`.
+   | Tipo | Quando | Exemplo |
+   |---|---|---|
+   | `patch` | só correções | 0.1.0 → 0.1.1 |
+   | `minor` | novidades compatíveis | 0.1.0 → 0.2.0 |
+   | `major` | mudanças que quebram o uso antigo (sintaxe, API, formato do `.tatu`) | 0.1.0 → 1.0.0 |
+
+3. O workflow [`versao.yml`](.github/workflows/versao.yml) faz o resto:
+   - roda os testes;
+   - sobe a versão e fecha a seção `## [Não lançado]` do CHANGELOG — **se ela estiver vazia, monta as notas
+     a partir dos commits** desde a última tag, agrupando por `feat:`, `fix:`, `docs:`...;
+   - faz o commit `chore: versão X.Y.Z`, cria a tag `vX.Y.Z` e chama o [`release.yml`](.github/workflows/release.yml).
+4. O Release gera e testa todos os pacotes, publica o **GitHub Release** (notas, tabela de downloads e
+   `SHA256SUMS.txt`) e depois **instala o que publicou** em Windows, macOS (Apple Silicon e Intel) e Linux
+   (x64 e ARM64) para conferir.
+
+Pelo terminal, com o `gh` logado: `gh workflow run versao.yml -f tipo=minor`.
+
+<details>
+<summary>Outros caminhos</summary>
+
+- **Tag à mão:** atualize `__version__` e o CHANGELOG, faça o commit e rode
+  `git tag vX.Y.Z && git push origin main vX.Y.Z` — o `release.yml` dispara sozinho.
+- **Republicar** uma tag que já existe (por exemplo, depois de corrigir um pacote): **Actions → Release →
+  Run workflow** com a tag. Os arquivos do Release são substituídos.
+- **Ensaiar** sem mudar nada: `python scripts/bump_version.py --tipo minor --dry-run`.
+- **PyPI** *(opcional)*: configure o *trusted publishing* do projeto no PyPI (ambiente `pypi`) e crie a
+  variável de repositório `PUBLICAR_NO_PYPI = true`.
+
+</details>
 
 ## 🤖 Claude Code no projeto
 

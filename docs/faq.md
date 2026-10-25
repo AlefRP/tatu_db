@@ -70,7 +70,7 @@ Veja o [capítulo 6](06-armazenamento.md).
 ## 🐍 Funciona com qual versão do Python?
 
 Do **3.10** em diante, no Windows, macOS e Linux. O CI testa todas as combinações a cada mudança.
-Os [instaladores](instalacao.md#-instaladores-exe-pkg-deb) nem precisam de Python.
+Os [instaladores](instalacao.md#-instaladores) nem precisam de Python.
 
 ## 🤖 O que são as pastas `.claude/` e o arquivo `CLAUDE.md`?
 

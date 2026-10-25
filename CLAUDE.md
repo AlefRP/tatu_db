@@ -18,7 +18,7 @@ Rode os três primeiros antes de considerar qualquer tarefa pronta.
 
 ## Arquitetura (a jornada de uma consulta)
 
-```
+```text
 texto → tokenizer.py → parser.py (+ nodes.py) → planner.py → operators.py → storage.py
         tokens         AST imutável             plano        linhas (Volcano)  heap, índices, diário
 ```
@@ -58,11 +58,16 @@ texto → tokenizer.py → parser.py (+ nodes.py) → planner.py → operators.p
 
 ## Instaladores e CI
 
-- `scripts/install.sh` (POSIX sh, Linux/macOS) e `scripts/install.ps1` (Windows PowerShell 5.1 e 7).
-  O `.ps1` fica **sem BOM** (o BOM quebra `irm | iex`); o `.iss` do Inno Setup fica **com BOM**.
-- `.github/workflows/ci.yml` (lint, docs, testes 3×5, instaladores, pacotes) chama `pacotes.yml`;
-  `release.yml` publica ao receber uma tag `vX.Y.Z` que bata com `tatu/__init__.py`.
-- A versão mora **só** em `tatu/__init__.py` (`__version__`).
+- `scripts/install.sh` (POSIX sh, Linux/macOS) e `scripts/install.ps1` (Windows PowerShell 5.1 e 7):
+  modo Python (venv) ou binário (baixa `releases/latest/download/tatu-<so>-<arq>.*`).
+  O `.ps1` fica **sem BOM** (o BOM quebra `irm | iex`) e **sem "—", "→", aspas curvas** (o 5.1 lê como
+  ANSI e esses bytes viram aspas) — o `check_docs.py` confere. O `.iss` do Inno Setup fica **com BOM**.
+- Nomes dos pacotes **sem versão** (`tatu-windows-x86_64-setup.exe`, `tatu-linux-arm64.deb`...), para os
+  links `releases/latest/download/...` nunca quebrarem.
+- Workflows: `ci.yml` (lint, docs, testes 3×5, instaladores) chama `pacotes.yml` (5 plataformas);
+  `versao.yml` ("Nova versão", manual) sobe a versão via `scripts/bump_version.py`, cria a tag e chama
+  `release.yml`, que publica (notas via `scripts/release_notes.py`) e testa o que publicou.
+- A versão mora **só** em `tatu/__init__.py` (`__version__`). Para lançar, use a skill `lancar-versao`.
 
 ## Commits
 

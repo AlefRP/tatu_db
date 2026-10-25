@@ -1,69 +1,67 @@
 ---
 name: lancar-versao
-description: Prepara e publica uma versão nova do Tatu DB — escolhe o número (SemVer), atualiza tatu/__init__.py e o CHANGELOG, roda todas as verificações, cria o commit e a tag vX.Y.Z e acompanha o workflow de release que gera instaladores para Windows, macOS e Linux. Use quando pedirem para "lançar", "publicar", "soltar uma versão", "fazer release" ou "criar a tag".
+description: Prepara e publica uma versão nova do Tatu DB — escolhe o número (SemVer), revisa o CHANGELOG, dispara o workflow "Nova versão" do GitHub Actions (que sobe a versão, cria a tag e publica o Release com os instaladores de Windows, macOS e Linux) e acompanha até o fim. Use quando pedirem para "lançar", "publicar", "soltar uma versão", "fazer release" ou "criar a tag".
 disable-model-invocation: true
 ---
 
 # Lançar uma versão
 
-O workflow `.github/workflows/release.yml` faz o trabalho pesado quando recebe uma tag `vX.Y.Z`:
-confere a versão, gera wheel, executáveis, `setup.exe`, `.pkg` e `.deb`, testa cada um e cria o
-GitHub Release com as notas do `CHANGELOG.md`. Esta skill prepara tudo para isso dar certo.
+O lançamento é feito pelo GitHub Actions:
 
-## 1. Escolha o número (Versionamento Semântico)
+- `.github/workflows/versao.yml` ("Nova versão") — roda os testes, sobe `__version__` em
+  `tatu/__init__.py`, fecha `## [Não lançado]` no `CHANGELOG.md` (montando as notas a partir dos
+  commits se a seção estiver vazia), faz o commit, cria a tag `vX.Y.Z` e chama o release;
+- `.github/workflows/release.yml` — gera e testa todos os pacotes (`pacotes.yml`), publica o GitHub
+  Release com notas, tabela de downloads e `SHA256SUMS.txt`, e instala o que publicou em cada sistema.
 
-Leia `## [Não lançado]` no `CHANGELOG.md` e a versão atual em `tatu/__init__.py`:
+## 1. Escolha o tipo (Versionamento Semântico)
 
-| Mudou… | Versão | Exemplo |
+Leia `## [Não lançado]` no `CHANGELOG.md`, a versão atual em `tatu/__init__.py` e os commits desde a
+última tag (`git log $(git describe --tags --abbrev=0)..HEAD --oneline`):
+
+| Mudou… | Tipo | Exemplo |
 |---|---|---|
-| algo que quebra uso antigo (sintaxe, API Python, formato do `.tatu`) | **maior** | 0.4.2 → 1.0.0 |
-| recurso novo compatível | **menor** | 0.4.2 → 0.5.0 |
-| só correções | **correção** | 0.4.2 → 0.4.3 |
+| algo que quebra uso antigo (sintaxe, API Python, formato do `.tatu`) | `major` | 0.4.2 → 1.0.0 |
+| recurso novo compatível | `minor` | 0.4.2 → 0.5.0 |
+| só correções | `patch` | 0.4.2 → 0.4.3 |
 
-Enquanto a versão for `0.x`, mudanças que quebram podem subir só o número do meio — mas avise no CHANGELOG.
-Confirme o número com a pessoa antes de seguir.
+Mostre à pessoa a versão resultante e as notas (ensaio, sem gravar nada):
 
-## 2. Atualize os arquivos
+```bash
+python scripts/bump_version.py --tipo minor --dry-run
+```
 
-1. `tatu/__init__.py` → `__version__ = "X.Y.Z"` (é a **única** fonte da versão).
-2. `CHANGELOG.md`:
-   - renomeie `## [Não lançado]` para `## [X.Y.Z] - AAAA-MM-DD` (data de hoje);
-   - crie um `## [Não lançado]` vazio acima;
-   - atualize os links do rodapé (`[Não lançado]: .../compare/vX.Y.Z...HEAD` e `[X.Y.Z]: .../releases/tag/vX.Y.Z`).
-3. Se o formato do arquivo `.tatu` mudou, confira que `FILE_FORMAT_VERSION` em `tatu/storage.py` subiu
-   e que arquivos antigos ainda abrem (ou que há uma mensagem clara).
+Se as notas geradas pelos commits ficarem pobres, sugira escrever a seção `## [Não lançado]` à mão
+(e commitar) antes de lançar.
 
-## 3. Verifique tudo
+## 2. Verifique
 
 ```bash
 python -m unittest discover -s tests
 ruff check .
 python scripts/check_docs.py
-python scripts/release_notes.py X.Y.Z      # as notas que irão para o Release
 ```
 
-Garanta que o CI do `main` está verde antes de lançar.
+O CI do `main` precisa estar verde. Se o formato do arquivo `.tatu` mudou, confira que
+`FILE_FORMAT_VERSION` em `tatu/storage.py` subiu e que arquivos antigos ainda abrem.
 
-## 4. Commit, tag e push — só com confirmação explícita
+## 3. Dispare — só com confirmação explícita
 
-Publicar uma versão é visível para todo mundo. **Mostre o resumo (versão, notas) e peça confirmação
-antes de rodar:**
+Publicar uma versão é visível para todo mundo: **confirme o tipo/versão com a pessoa antes**.
 
-```bash
-git add tatu/__init__.py CHANGELOG.md
-git commit -m "chore: versão X.Y.Z"
-git tag vX.Y.Z
-git push origin main vX.Y.Z
-```
+- Com o `gh` logado: `gh workflow run versao.yml -f tipo=minor` (ou `-f versao=1.0.0`).
+- Sem o `gh`: peça para a pessoa ir em **Actions → Nova versão → Run workflow** e escolher o tipo.
 
-## 5. Acompanhe o release
+## 4. Acompanhe
 
-O workflow leva alguns minutos (gera e testa pacotes nos três sistemas). Acompanhe com
-`gh run watch` (se o `gh` estiver logado) ou na aba **Actions**. Se falhar:
+`gh run watch` (com o `gh` logado) ou a aba **Actions**. A versão leva alguns minutos: são pacotes
+para Windows, macOS (Apple Silicon e Intel) e Linux (x64 e ARM64), cada um instalado e testado.
 
-- **"A tag não bate com a versão"** → a tag e o `__version__` divergem; apague a tag
-  (`git tag -d vX.Y.Z && git push origin :refs/tags/vX.Y.Z`), corrija e repita.
-- **falha num pacote** → leia o log do job, corrija no `main` e crie uma versão de correção.
+Se algo falhar:
 
-Ao final, confira a página do Release: devem estar lá o `setup.exe`, o `.zip` do Windows, o `.pkg` e o
-`.tar.gz` do macOS, o `.deb` e o `.tar.gz` do Linux, a wheel e o sdist.
+- **antes da tag** (testes, docs) → corrija no `main` e dispare de novo;
+- **num pacote, depois da tag** → corrija no `main` e use **Actions → Release → Run workflow** com a
+  mesma tag para republicar (os arquivos são substituídos) — ou lance uma versão `patch`.
+
+Ao final, confira a página do Release: `setup.exe` e `.zip` (Windows), `.pkg` e `.tar.gz` (macOS arm64 e
+x86_64), `.deb`, `.rpm` e `.tar.gz` (Linux x86_64 e arm64), a wheel, o sdist e o `SHA256SUMS.txt`.
