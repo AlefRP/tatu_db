@@ -7,6 +7,7 @@ Verifica:
   • links relativos em Markdown e HTML (`[texto](caminho)`, `src="..."`, `href="..."`);
   • âncoras (`arquivo.md#titulo`), usando o mesmo algoritmo do GitHub;
   • se cada SVG em docs/ e packaging/ é XML válido;
+  • se o install.ps1 pode ser lido pelo Windows PowerShell 5.1 (sem BOM e sem "—", "→"...);
   • se o número de testes citado no README bate com o número real.
 """
 
@@ -118,6 +119,28 @@ def check_svgs(problems: list[str]) -> int:
     return len(svgs)
 
 
+def check_powershell(problems: list[str]) -> int:
+    """O install.ps1 precisa sobreviver a ser lido como ANSI pelo Windows PowerShell 5.1.
+
+    Nessa leitura, um travessão "—" (bytes UTF-8 E2 80 94) vira "â€”" — e o byte 0x94
+    é uma aspa curva ” que o PowerShell trata como aspas: a string fecha no meio e o
+    script nem chega a rodar. Letras acentuadas (ã, é, ç...) são seguras.
+    """
+    quotes_in_cp1252 = {0x82, 0x84, 0x91, 0x92, 0x93, 0x94}  # ‚ „ ‘ ’ “ ”
+    scripts = sorted(ROOT.glob("scripts/*.ps1"))
+    for script in scripts:
+        for number, line in enumerate(script.read_text(encoding="utf-8").splitlines(), 1):
+            for ch in line:
+                if quotes_in_cp1252.intersection(ch.encode("utf-8")):
+                    problems.append(f"{script.relative_to(ROOT)}:{number}: o caractere "
+                                    f"U+{ord(ch):04X} ({ch}) quebra o Windows PowerShell 5.1 — "
+                                    "troque por um equivalente ASCII")
+                    break
+        if script.read_bytes().startswith(b"\xef\xbb\xbf"):
+            problems.append(f"{script.relative_to(ROOT)}: está com BOM — isso quebra o `irm | iex`")
+    return len(scripts)
+
+
 def check_test_count(problems: list[str]) -> int:
     sys.path.insert(0, str(ROOT))
     suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"))
@@ -141,13 +164,15 @@ def main() -> int:
     problems: list[str] = []
     links = check_links(problems)
     svgs = check_svgs(problems)
+    ps1 = check_powershell(problems)
     tests = check_test_count(problems)
     if problems:
         print(f"✖ {len(problems)} problema(s) na documentação:")
         for problem in problems:
             print(f"  - {problem}")
         return 1
-    print(f"✔ documentação ok: {links} links, {svgs} SVGs, {tests} testes citados corretamente")
+    print(f"✔ documentação ok: {links} links, {svgs} SVGs, {ps1} script(s) PowerShell, "
+          f"{tests} testes citados corretamente")
     return 0
 
 

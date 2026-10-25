@@ -1,60 +1,144 @@
-# 🚀 Publica uma versão nova quando uma tag vX.Y.Z é enviada:
+# 🚀 Publica uma versão do Tatu DB no GitHub Releases.
 #
-#   git tag v0.2.0 && git push origin v0.2.0
+# Três jeitos de disparar:
+#   1. o workflow "Nova versão" (versao.yml) — o recomendado: ele sobe a versão,
+#      atualiza o CHANGELOG, cria a tag e chama este workflow;
+#   2. enviando uma tag à mão:   git tag v0.2.0 && git push origin v0.2.0
+#   3. pela aba Actions (Run workflow), para republicar uma tag que já existe.
 #
-# Gera todos os pacotes (via pacotes.yml), cria o GitHub Release com as notas
-# do CHANGELOG.md e, se a variável PUBLICAR_NO_PYPI for "true", publica no PyPI.
+# Etapas: confere a versão → gera e testa todos os pacotes (pacotes.yml) →
+# publica o Release com notas, tabela de downloads e SHA256SUMS → instala o
+# que foi publicado em cada sistema para conferir → (opcional) PyPI.
 
 name: Release
+run-name: "🚀 Release ${{ inputs.tag || github.ref_name }}"
 
 on:
   push:
     tags: ["v*"]
+  workflow_call:
+    inputs:
+      tag:
+        description: "Tag a publicar (ex.: v0.2.0)"
+        type: string
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag que já existe, para (re)publicar (ex.: v0.1.0)"
+        type: string
+        required: true
 
 permissions:
   contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+  PYTHONUTF8: "1"
 
 jobs:
   conferir:
     name: 🔖 Confere a versão
     runs-on: ubuntu-latest
+    outputs:
+      versao: ${{ steps.versao.outputs.versao }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
       - name: A tag bate com tatu/__init__.py?
+        id: versao
         run: |
           VERSION="$(python3 -c 'import tatu; print(tatu.__version__)')"
-          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::A tag $GITHUB_REF_NAME não bate com a versão $VERSION de tatu/__init__.py"
+          if [ "v$VERSION" != "$TAG" ]; then
+            echo "::error::A tag $TAG não bate com a versão $VERSION de tatu/__init__.py"
             exit 1
           fi
+          echo "versao=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Há notas no CHANGELOG.md?
-        run: python3 scripts/release_notes.py "${GITHUB_REF_NAME#v}" > /dev/null
+        env:
+          VERSAO: ${{ steps.versao.outputs.versao }}
+        run: python3 scripts/release_notes.py "$VERSAO" > /dev/null
 
   pacotes:
     name: 📦 Pacotes
     needs: conferir
     uses: ./.github/workflows/pacotes.yml
+    with:
+      ref: ${{ inputs.tag || github.ref_name }}
 
   publicar:
     name: 🚀 GitHub Release
-    needs: pacotes
+    needs: [conferir, pacotes]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSAO: ${{ needs.conferir.outputs.versao }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
-      - name: Cria o release
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Somas de verificação (SHA256SUMS.txt)
+        working-directory: dist
         run: |
-          python3 scripts/release_notes.py "${GITHUB_REF_NAME#v}" > notas.md
-          gh release create "$GITHUB_REF_NAME" dist/* \
-            --title "🐾 Tatu DB ${GITHUB_REF_NAME}" \
-            --notes-file notas.md
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Notas da versão
+        run: |
+          python3 scripts/release_notes.py "$VERSAO" --assets dist > notas.md
+          cat notas.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Cria (ou atualiza) o Release
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+            gh release edit "$TAG" --title "🐾 Tatu DB $TAG" --notes-file notas.md
+          else
+            gh release create "$TAG" dist/* --verify-tag --title "🐾 Tatu DB $TAG" --notes-file notas.md
+          fi
+
+  verificar:
+    name: ✅ Instala o que foi publicado · ${{ matrix.os }}
+    needs: [conferir, publicar]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-15-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      TATU_REF: ${{ inputs.tag || github.ref_name }}
+      VERSAO: ${{ needs.conferir.outputs.versao }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - name: install.sh baixando o executável do Release
+        if: runner.os != 'Windows'
+        run: |
+          sh scripts/install.sh --binario
+          ~/.local/bin/tatu --version | grep -F "$VERSAO"
+          ~/.local/bin/tatu -c "SELECT 'release ok' AS status"
+          sh scripts/install.sh --uninstall
+      - name: install.ps1 baixando o executável do Release
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./scripts/install.ps1 -Binario -NoPath
+          $tatu = "$env:LOCALAPPDATA\tatu-db\bin\tatu.exe"
+          $version = & $tatu --version
+          if ($version -notmatch [regex]::Escape($env:VERSAO)) { throw "versão errada: $version" }
+          & $tatu -c "SELECT 'release ok' AS status"
+          ./scripts/install.ps1 -Uninstall
 
   pypi:
     name: 🐍 PyPI

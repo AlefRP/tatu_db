@@ -1,0 +1,89 @@
+# 🔖 Nova versão — lança o Tatu DB com um clique.
+#
+# Na aba Actions → "Nova versão" → Run workflow, escolha o tipo:
+#
+#   patch → 0.1.0 → 0.1.1   (só correções)
+#   minor → 0.1.0 → 0.2.0   (novidades compatíveis)
+#   major → 0.1.0 → 1.0.0   (mudanças que quebram o uso antigo)
+#
+# O workflow roda os testes, sobe a versão em tatu/__init__.py, fecha a seção
+# "Não lançado" do CHANGELOG (se estiver vazia, monta as notas a partir dos
+# commits), faz o commit, cria a tag vX.Y.Z e chama o release.yml, que gera os
+# instaladores de Windows, macOS e Linux e publica o GitHub Release.
+
+name: Nova versão
+run-name: "🔖 Nova versão (${{ inputs.versao || inputs.tipo }})"
+
+on:
+  workflow_dispatch:
+    inputs:
+      tipo:
+        description: "Que parte da versão sobe? patch = correções · minor = novidades · major = quebra compatibilidade"
+        type: choice
+        options: [patch, minor, major]
+        default: patch
+      versao:
+        description: "...ou a versão exata (ex.: 1.0.0). Deixe vazio para usar o tipo acima."
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nova-versao
+  cancel-in-progress: false
+
+env:
+  PYTHONUTF8: "1"
+
+jobs:
+  preparar:
+    name: 🔖 Sobe a versão, CHANGELOG e tag
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.bump.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # o histórico e as tags montam as notas da versão
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Testes antes de tudo
+        run: python -m unittest discover -s tests
+      - name: Sobe a versão e fecha o CHANGELOG
+        id: bump
+        env:
+          TIPO: ${{ inputs.tipo }}
+          VERSAO: ${{ inputs.versao }}
+        run: python scripts/bump_version.py --tipo "$TIPO" --versao "$VERSAO" >> "$GITHUB_OUTPUT"
+      - name: Confere a documentação
+        run: python scripts/check_docs.py
+      - name: Commit, tag e push
+        env:
+          TAG: ${{ steps.bump.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: versão ${TAG#v}"
+          git tag -a "$TAG" -m "Tatu DB ${TAG#v}"
+          git push origin HEAD:main "$TAG"
+          {
+            echo "## 🔖 Tatu DB ${TAG#v}"
+            echo
+            python scripts/release_notes.py "${TAG#v}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: 🚀 Release
+    needs: preparar
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.preparar.outputs.tag }}
+    permissions:
+      contents: write
+      id-token: write

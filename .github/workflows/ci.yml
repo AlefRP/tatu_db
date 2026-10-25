@@ -1,9 +1,11 @@
 # 🧪 Integração contínua: roda a cada push e pull request.
 #
-#   qualidade    → ruff + conferência da documentação (links, âncoras, SVGs)
-#   testes       → 88+ testes em Linux, macOS e Windows, do Python 3.10 ao 3.14
+#   qualidade    → ruff, documentação (links, âncoras, SVGs) e ensaio dos scripts de versão
+#   testes       → todos os testes em Linux, macOS e Windows, do Python 3.10 ao 3.14
 #   instaladores → install.sh e install.ps1 de verdade, nos três sistemas
-#   pacotes      → executáveis, .deb, .pkg, setup.exe e wheel (ficam como artefatos)
+#   pacotes      → executáveis, setup.exe, .pkg, .deb, .rpm e wheel (ficam como artefatos)
+#
+# Para lançar uma versão, use o workflow "Nova versão" (versao.yml).
 
 name: CI
 
@@ -43,7 +45,14 @@ jobs:
         run: |
           sh -n scripts/install.sh
           sh -n packaging/linux/build_deb.sh
+          sh -n packaging/linux/build_rpm.sh
           sh -n packaging/macos/build_pkg.sh
+      - name: Scripts de versão (ensaio, sem gravar nada)
+        run: |
+          python scripts/bump_version.py --tipo minor --dry-run
+          VERSAO="$(python -c 'import tatu; print(tatu.__version__)')"
+          mkdir -p /tmp/falsos && touch /tmp/falsos/tatu-windows-x86_64-setup.exe /tmp/falsos/tatu-linux-x86_64.deb
+          python scripts/release_notes.py "$VERSAO" --assets /tmp/falsos | grep -q "tatu-linux-x86_64.deb"
 
   testes:
     name: 🧪 ${{ matrix.os }} · Python ${{ matrix.python }}
