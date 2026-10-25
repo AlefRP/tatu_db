@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="1200" height="360" role="img" aria-labelledby="titulo">
+  <title id="titulo">Tatu DB — um banco de dados relacional feito do zero, em Python, para aprender</title>
+  <defs>
+    <clipPath id="moldura"><rect width="1200" height="360" rx="24"/></clipPath>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF4DE"/>
+      <stop offset="1" stop-color="#FFD69B"/>
+    </linearGradient>
+    <linearGradient id="casco-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8B57A"/>
+      <stop offset="1" stop-color="#B8783F"/>
+    </linearGradient>
+    <pattern id="escamas" width="12" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="2.2" fill="#7A4A22" opacity=".35"/>
+      <circle cx="9" cy="8" r="2.2" fill="#7A4A22" opacity=".35"/>
+    </pattern>
+    <clipPath id="clip-casco">
+      <path d="M56 152 C52 92 98 40 166 38 C236 36 282 88 282 152 Q169 168 56 152 Z"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#moldura)">
+    <!-- céu, sol e morros -->
+    <rect width="1200" height="360" fill="url(#ceu)"/>
+    <circle cx="1085" cy="88" r="74" fill="#FFC86B" opacity=".35"/>
+    <circle cx="1085" cy="88" r="48" fill="#FFB547"/>
+    <path d="M0 250 C150 200 300 215 420 235 C560 258 640 200 800 210 C940 220 1040 190 1200 215 L1200 360 L0 360 Z" fill="#EFC688"/>
+    <path d="M0 282 C200 256 380 270 560 278 C760 288 900 254 1200 268 L1200 360 L0 360 Z" fill="#DDA762"/>
+
+    <!-- mandacaru -->
+    <g fill="#7E9A45" stroke="#5E7632" stroke-width="2.5">
+      <rect x="1112" y="214" width="13" height="38" rx="6.5"/>
+      <rect x="1112" y="238" width="28" height="13" rx="6.5"/>
+      <rect x="1157" y="200" width="13" height="40" rx="6.5"/>
+      <rect x="1142" y="226" width="28" height="13" rx="6.5"/>
+      <rect x="1132" y="190" width="18" height="92" rx="9"/>
+    </g>
+    <path d="M1141 198 V276" stroke="#5E7632" stroke-width="2" opacity=".6"/>
+
+    <!-- chão -->
+    <path d="M0 300 C240 292 480 304 720 298 C900 294 1050 300 1200 296 L1200 360 L0 360 Z" fill="#B9783C"/>
+    <path d="M0 330 C300 322 600 336 900 326 C1000 323 1100 330 1200 326 L1200 360 L0 360 Z" fill="#9C6232"/>
+    <g fill="#7A4A22" opacity=".45">
+      <ellipse cx="120" cy="314" rx="7" ry="3"/>
+      <ellipse cx="300" cy="345" rx="9" ry="3.5"/>
+      <ellipse cx="520" cy="318" rx="6" ry="2.5"/>
+      <ellipse cx="700" cy="342" rx="8" ry="3"/>
+      <ellipse cx="930" cy="316" rx="6" ry="2.5"/>
+      <ellipse cx="1130" cy="344" rx="9" ry="3.5"/>
+    </g>
+
+    <!-- título -->
+    <text x="64" y="150" font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="104" font-weight="800" fill="#4A2A12" letter-spacing="-2">Tatu DB</text>
+    <text x="68" y="200" font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="30" font-weight="700" fill="#6B4423">Um banco de dados relacional</text>
+    <text x="68" y="236" font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="24" fill="#7A5230">feito do zero, em Python — para aprender cavando.</text>
+
+    <!-- etiquetas -->
+    <g font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="16" font-weight="600" fill="#6B4423" text-anchor="middle">
+      <rect x="68" y="258" width="58" height="32" rx="16" fill="#FFF8EC" stroke="#C99560" stroke-width="2"/>
+      <text x="97" y="279">SQL</text>
+      <rect x="136" y="258" width="76" height="32" rx="16" fill="#FFF8EC" stroke="#C99560" stroke-width="2"/>
+      <text x="174" y="279">JOINs</text>
+      <rect x="222" y="258" width="104" height="32" rx="16" fill="#FFF8EC" stroke="#C99560" stroke-width="2"/>
+      <text x="274" y="279">GROUP BY</text>
+      <rect x="336" y="258" width="88" height="32" rx="16" fill="#FFF8EC" stroke="#C99560" stroke-width="2"/>
+      <text x="380" y="279">índices</text>
+      <rect x="434" y="258" width="116" height="32" rx="16" fill="#FFF8EC" stroke="#C99560" stroke-width="2"/>
+      <text x="492" y="279">transações</text>
+    </g>
+
+    <!-- o banco de dados que o tatu está farejando -->
+    <g stroke="#275E61" stroke-width="3">
+      <path d="M1008 206 V278 A42 12 0 0 0 1092 278 V206" fill="#3E8E92"/>
+      <ellipse cx="1050" cy="206" rx="42" ry="12" fill="#6CC3C6"/>
+      <path d="M1008 230 A42 12 0 0 0 1092 230 M1008 254 A42 12 0 0 0 1092 254" fill="none"/>
+    </g>
+    <path d="M1018 222 V280" stroke="#9FDCDD" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+    <g fill="#FFFFFF">
+      <path d="M996 176 l3 8 l8 3 l-8 3 l-3 8 l-3 -8 l-8 -3 l8 -3 Z"/>
+      <path d="M1104 168 l2 6 l6 2 l-6 2 l-2 6 l-2 -6 l-6 -2 l6 -2 Z"/>
+    </g>
+
+    <!-- o tatu (o mesmo de tatu.svg) -->
+    <g transform="translate(610 92) scale(1.12)">
+      <path d="M66 140 C46 148 26 164 10 184 C30 177 50 167 72 158 Z" fill="#B57A43" stroke="#5A3519" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M50 150 L55 164 M36 161 L42 172 M24 171 L29 179" stroke="#5A3519" stroke-width="2" opacity=".55" stroke-linecap="round"/>
+      <rect x="116" y="146" width="24" height="38" rx="10" fill="#7A4A22" stroke="#5A3519" stroke-width="3"/>
+      <rect x="206" y="146" width="24" height="38" rx="10" fill="#7A4A22" stroke="#5A3519" stroke-width="3"/>
+      <rect x="82" y="140" width="26" height="44" rx="11" fill="#8C5A2B" stroke="#5A3519" stroke-width="3"/>
+      <rect x="238" y="140" width="26" height="44" rx="11" fill="#8C5A2B" stroke="#5A3519" stroke-width="3"/>
+      <path d="M86 184 l-3 5 M93 185 l-1 5 M100 184 l1 5 M244 184 l-1 5 M251 185 l1 5 M258 184 l2 5" stroke="#F3E3C8" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M56 152 C52 92 98 40 166 38 C236 36 282 88 282 152 Q169 168 56 152 Z" fill="url(#casco-grad)"/>
+      <g clip-path="url(#clip-casco)">
+        <rect x="40" y="20" width="90" height="150" fill="url(#escamas)"/>
+        <rect x="212" y="20" width="80" height="150" fill="url(#escamas)"/>
+        <path d="M142 20 Q147 95 142 175 L156 175 Q161 95 156 20 Z" fill="#000" opacity=".08"/>
+        <path d="M170 20 Q175 95 170 175 L184 175 Q189 95 184 20 Z" fill="#000" opacity=".08"/>
+        <path d="M198 20 Q203 95 198 175 L212 175 Q217 95 212 20 Z" fill="#000" opacity=".08"/>
+        <path d="M128 20 Q133 95 128 175 M142 20 Q147 95 142 175 M156 20 Q161 95 156 175 M170 20 Q175 95 170 175 M184 20 Q189 95 184 175 M198 20 Q203 95 198 175 M212 20 Q217 95 212 175" fill="none" stroke="#6E4220" stroke-width="3"/>
+        <path d="M56 150 Q169 166 282 150" fill="none" stroke="#7A4A22" stroke-width="10" opacity=".35"/>
+      </g>
+      <path d="M90 94 C102 68 126 54 150 49" fill="none" stroke="#FFF3DE" stroke-width="6" stroke-linecap="round" opacity=".6"/>
+      <path d="M56 152 C52 92 98 40 166 38 C236 36 282 88 282 152 Q169 168 56 152 Z" fill="none" stroke="#5A3519" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M262 104 C255 86 259 70 270 65 C279 76 279 93 273 108 Z" fill="#8C5A2B" stroke="#5A3519" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M266 99 C262 87 265 77 270 73 C275 82 274 92 271 101 Z" fill="#D9A57A"/>
+      <path d="M252 118 C258 100 280 96 296 108 C308 117 318 132 330 146 C334 151 330 157 323 156 C306 154 286 156 270 156 C256 156 248 136 252 118 Z" fill="#C48A55" stroke="#5A3519" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M256 115 C264 103 282 101 294 110 C285 112 270 116 258 124 Z" fill="#A86E3A" opacity=".75"/>
+      <ellipse cx="297" cy="142" rx="7" ry="4" fill="#E88A7A" opacity=".45"/>
+      <circle cx="286" cy="126" r="5" fill="#2B1A0E"/>
+      <circle cx="287.8" cy="124.2" r="1.6" fill="#FFFFFF"/>
+      <ellipse cx="327" cy="150" rx="4" ry="3.2" fill="#2B1A0E"/>
+      <path d="M305 152 Q311 155 318 152" fill="none" stroke="#5A3519" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>

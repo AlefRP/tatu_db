@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 660" width="1060" height="660" role="img" aria-labelledby="titulo">
+  <title id="titulo">Um plano de execução é uma árvore de operadores; as linhas sobem das folhas até a raiz</title>
+  <defs>
+    <marker id="sobe" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#B98552"/>
+    </marker>
+  </defs>
+
+  <rect x="1" y="1" width="1058" height="658" rx="22" fill="#FFF8EE" stroke="#E9D5B7" stroke-width="2"/>
+
+  <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif">
+    <text x="40" y="52" font-size="26" font-weight="800" fill="#4A2A12">Um plano é uma árvore de operadores</text>
+    <text x="40" y="80" font-size="16" fill="#8A6A4A">cada operador pede a próxima linha ao filho e entrega ao pai — as linhas sobem das folhas até a raiz</text>
+  </g>
+
+  <!-- a consulta -->
+  <rect x="40" y="104" width="390" height="244" rx="14" fill="#2B1B10"/>
+  <g font-family="Consolas,'Cascadia Code','DejaVu Sans Mono',monospace" font-size="17" fill="#FFF1DC">
+    <text x="62" y="138"><tspan fill="#FFB86B">SELECT</tspan> e.nome, <tspan fill="#C6A7E0">COUNT</tspan>(*) <tspan fill="#FFB86B">AS</tspan> total</text>
+    <text x="62" y="166"><tspan fill="#FFB86B">FROM</tspan> tatus t</text>
+    <text x="62" y="194"><tspan fill="#FFB86B">JOIN</tspan> especies e</text>
+    <text x="81" y="222"><tspan fill="#FFB86B">ON</tspan> t.especie_id = e.id</text>
+    <text x="62" y="250"><tspan fill="#FFB86B">WHERE</tspan> t.idade &gt; <tspan fill="#8FD3D6">2</tspan></text>
+    <text x="62" y="278"><tspan fill="#FFB86B">GROUP BY</tspan> e.nome</text>
+    <text x="62" y="306"><tspan fill="#FFB86B">ORDER BY</tspan> total <tspan fill="#FFB86B">DESC</tspan></text>
+    <text x="62" y="334"><tspan fill="#FFB86B">LIMIT</tspan> <tspan fill="#8FD3D6">3</tspan>;</text>
+  </g>
+
+  <!-- legenda -->
+  <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="15" fill="#4A2A12">
+    <text x="40" y="392" font-size="18" font-weight="700">Legenda</text>
+    <rect x="40" y="408" width="22" height="22" rx="6" fill="#DCEBF5" stroke="#6FA8C7" stroke-width="2"/>
+    <text x="74" y="425">leitura — SeqScan, IndexScan</text>
+    <rect x="40" y="440" width="22" height="22" rx="6" fill="#E5F2D6" stroke="#8DB872" stroke-width="2"/>
+    <text x="74" y="457">combinar e filtrar — Join, Filter</text>
+    <rect x="40" y="472" width="22" height="22" rx="6" fill="#FDE7CF" stroke="#E0A96D" stroke-width="2"/>
+    <text x="74" y="489">agrupar — HashAggregate</text>
+    <rect x="40" y="504" width="22" height="22" rx="6" fill="#ECE0F5" stroke="#A784C2" stroke-width="2"/>
+    <text x="74" y="521">acabamento — Sort, Project, Limit</text>
+    <g fill="#7A5A3A" font-size="14">
+      <text x="40" y="568">Tudo é preguiçoso: o Limit para de pedir linhas</text>
+      <text x="40" y="588">assim que recebe 3. Só o Sort precisa ver todas</text>
+      <text x="40" y="608">antes de entregar a primeira.</text>
+    </g>
+  </g>
+
+  <!-- as linhas sobem: setas -->
+  <g stroke="#B98552" stroke-width="3" marker-end="url(#sobe)">
+    <path d="M720 160 V146"/>
+    <path d="M720 220 V206"/>
+    <path d="M720 280 V266"/>
+    <path d="M720 340 V326"/>
+    <path d="M720 400 V386"/>
+    <path d="M600 478 L690 448"/>
+    <path d="M850 478 L750 448"/>
+    <path d="M600 572 V524"/>
+    <path d="M850 572 V524"/>
+  </g>
+
+  <!-- os operadores -->
+  <g font-family="Consolas,'Cascadia Code','DejaVu Sans Mono',monospace" font-size="16" fill="#3B2412" text-anchor="middle">
+    <rect x="590" y="104" width="260" height="40" rx="10" fill="#ECE0F5" stroke="#A784C2" stroke-width="2.5"/>
+    <text x="720" y="129">Limit(3)</text>
+    <rect x="590" y="164" width="260" height="40" rx="10" fill="#ECE0F5" stroke="#A784C2" stroke-width="2.5"/>
+    <text x="720" y="189">Project(nome, total)</text>
+    <rect x="590" y="224" width="260" height="40" rx="10" fill="#ECE0F5" stroke="#A784C2" stroke-width="2.5"/>
+    <text x="720" y="249">Sort(COUNT(*) DESC)</text>
+    <rect x="560" y="284" width="320" height="40" rx="10" fill="#FDE7CF" stroke="#E0A96D" stroke-width="2.5"/>
+    <text x="720" y="309">HashAggregate(por e.nome)</text>
+    <rect x="590" y="344" width="260" height="40" rx="10" fill="#E5F2D6" stroke="#8DB872" stroke-width="2.5"/>
+    <text x="720" y="369">Filter(t.idade &gt; 2)</text>
+    <rect x="570" y="404" width="300" height="40" rx="10" fill="#E5F2D6" stroke="#8DB872" stroke-width="2.5"/>
+    <text x="720" y="429">NestedLoopJoin(INNER)</text>
+    <rect x="490" y="482" width="220" height="40" rx="10" fill="#DCEBF5" stroke="#6FA8C7" stroke-width="2.5"/>
+    <text x="600" y="507">SeqScan(tatus)</text>
+    <rect x="730" y="482" width="240" height="40" rx="10" fill="#DCEBF5" stroke="#6FA8C7" stroke-width="2.5"/>
+    <text x="850" y="507">SeqScan(especies)</text>
+  </g>
+
+  <!-- as tabelas lá embaixo -->
+  <g stroke="#D08A80" stroke-width="2.5" fill="#F7DEDA">
+    <path d="M578 584 V612 A22 7 0 0 0 622 612 V584"/>
+    <ellipse cx="600" cy="584" rx="22" ry="7"/>
+    <path d="M828 584 V612 A22 7 0 0 0 872 612 V584"/>
+    <ellipse cx="850" cy="584" rx="22" ry="7"/>
+  </g>
+  <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#7A5A3A">
+    <text x="632" y="606">heap de tatus</text>
+    <text x="882" y="606">heap de especies</text>
+  </g>
+
+  <!-- comentários ao lado -->
+  <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#8A6A4A">
+    <text x="866" y="129">para depois de 3</text>
+    <text x="866" y="189">escolhe as colunas</text>
+    <text x="866" y="249">vê todas, ordena</text>
+    <text x="896" y="309">um balde</text>
+    <text x="896" y="327">por espécie</text>
+    <text x="866" y="369">joga fora idade ≤ 2</text>
+    <text x="886" y="429">tatu × espécie</text>
+  </g>
+</svg>

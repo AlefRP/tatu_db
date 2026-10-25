@@ -1,0 +1,8 @@
+{
+  "$comment": "HTML embutido centraliza imagens no GitHub; tabelas e linhas longas são de propósito.",
+  "default": true,
+  "MD013": false,
+  "MD033": false,
+  "MD041": false,
+  "MD060": false
+}

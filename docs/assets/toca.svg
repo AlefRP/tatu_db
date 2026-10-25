@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 600" width="1100" height="600" role="img" aria-labelledby="titulo">
+  <title id="titulo">A toca do tatu: o heap guarda as linhas, o índice hash acha linhas pelo valor e o diário desfaz mudanças</title>
+  <defs>
+    <clipPath id="moldura"><rect width="1100" height="600" rx="22"/></clipPath>
+    <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E3F1FB"/>
+      <stop offset="1" stop-color="#FFF4DE"/>
+    </linearGradient>
+    <linearGradient id="casco-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E8B57A"/>
+      <stop offset="1" stop-color="#B8783F"/>
+    </linearGradient>
+    <pattern id="escamas" width="12" height="10" patternUnits="userSpaceOnUse">
+      <circle cx="3" cy="3" r="2.2" fill="#7A4A22" opacity=".35"/>
+      <circle cx="9" cy="8" r="2.2" fill="#7A4A22" opacity=".35"/>
+    </pattern>
+    <clipPath id="clip-casco">
+      <path d="M56 152 C52 92 98 40 166 38 C236 36 282 88 282 152 Q169 168 56 152 Z"/>
+    </clipPath>
+    <marker id="seta" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 Z" fill="#4A2A12"/>
+    </marker>
+  </defs>
+
+  <g clip-path="url(#moldura)">
+    <!-- céu e terra -->
+    <rect width="1100" height="600" fill="url(#ceu)"/>
+    <path d="M0 120 C200 112 400 126 600 118 C800 110 950 124 1100 116 L1100 600 L0 600 Z" fill="#B57A43"/>
+    <path d="M0 300 C250 290 500 310 750 296 C900 288 1000 300 1100 294 L1100 600 L0 600 Z" fill="#A26A36"/>
+    <path d="M0 470 C300 460 600 480 900 466 C1000 462 1050 468 1100 466 L1100 600 L0 600 Z" fill="#8E5B2D"/>
+    <path d="M0 120 C200 112 400 126 600 118 C800 110 950 124 1100 116" fill="none" stroke="#7FA650" stroke-width="7" stroke-linecap="round"/>
+    <g stroke="#7FA650" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M420 120 l-4 -12 M426 121 l2 -14 M432 121 l6 -10"/>
+      <path d="M720 114 l-4 -12 M726 114 l2 -14 M732 114 l6 -10"/>
+      <path d="M880 116 l-3 -10 M886 116 l3 -11"/>
+    </g>
+    <g fill="#6E4220" opacity=".35">
+      <ellipse cx="80" cy="220" rx="9" ry="4"/>
+      <ellipse cx="560" cy="200" rx="7" ry="3"/>
+      <ellipse cx="60" cy="540" rx="10" ry="4"/>
+      <ellipse cx="380" cy="560" rx="8" ry="3"/>
+      <ellipse cx="1060" cy="420" rx="8" ry="3.5"/>
+      <ellipse cx="575" cy="420" rx="6" ry="2.5"/>
+    </g>
+
+    <!-- títulos no céu -->
+    <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif">
+      <text x="362" y="50" font-size="26" font-weight="800" fill="#4A2A12">A toca do tatu: onde os dados moram</text>
+      <text x="362" y="78" font-size="15" fill="#6B4423">storage.py · heap de linhas + índices + diário</text>
+    </g>
+
+    <!-- o arquivo no disco -->
+    <path d="M968 18 H1008 L1024 34 V92 H968 Z" fill="#FFFFFF" stroke="#6B4423" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M1008 18 V34 H1024" fill="#F3E3C8" stroke="#6B4423" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M977 48 H1014 M977 60 H1014 M977 72 H1004" stroke="#C99560" stroke-width="3" stroke-linecap="round"/>
+    <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif" text-anchor="end">
+      <text x="954" y="46" font-family="Consolas,'DejaVu Sans Mono',monospace" font-size="18" font-weight="700" fill="#4A2A12">zoo.tatu</text>
+      <text x="954" y="66" font-size="14" fill="#6B4423">um JSON no disco</text>
+      <text x="954" y="84" font-size="13" fill="#6B4423">o COMMIT grava a toca inteira</text>
+    </g>
+
+    <!-- entrada da toca -->
+    <path d="M56 123 C76 100 164 100 184 123 Z" fill="#A86E3A"/>
+    <ellipse cx="120" cy="124" rx="36" ry="10" fill="#2E1B0D"/>
+
+    <!-- túneis -->
+    <g fill="none" stroke-linecap="round">
+      <path d="M120 128 C118 190 150 230 210 262" stroke="#2E1B0D" stroke-width="34"/>
+      <path d="M520 330 C560 300 590 290 630 280" stroke="#2E1B0D" stroke-width="30"/>
+      <path d="M820 360 V420" stroke="#2E1B0D" stroke-width="30"/>
+      <path d="M120 128 C118 190 150 230 210 262" stroke="#3E2614" stroke-width="24"/>
+      <path d="M520 330 C560 300 590 290 630 280" stroke="#3E2614" stroke-width="20"/>
+      <path d="M820 360 V420" stroke="#3E2614" stroke-width="20"/>
+    </g>
+
+    <!-- câmara 1: heap -->
+    <rect x="120" y="250" width="420" height="250" rx="46" fill="#F6E4C6" stroke="#2E1B0D" stroke-width="8"/>
+    <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif">
+      <text x="154" y="294" font-size="19" font-weight="700" fill="#4A2A12">Heap · tabela tatus</text>
+      <text x="154" y="316" font-size="14" fill="#7A5A3A">rowid → linha (uma lista de valores)</text>
+    </g>
+    <g font-family="Consolas,'Cascadia Code','DejaVu Sans Mono',monospace" font-size="15" fill="#3B2412">
+      <g font-weight="700" fill="#8A6A4A">
+        <text x="160" y="348">rowid</text>
+        <text x="234" y="348">apelido</text>
+        <text x="410" y="348">especie_id</text>
+      </g>
+      <path d="M156 356 H506" stroke="#D8BE98" stroke-width="2"/>
+      <text x="184" y="378">1</text><text x="234" y="378">'Bolinha'</text><text x="450" y="378">2</text>
+      <text x="184" y="402">2</text><text x="234" y="402">'Canastrão'</text><text x="450" y="402">3</text>
+      <text x="184" y="426">3</text><text x="234" y="426">'Peba'</text><text x="450" y="426">4</text>
+      <rect x="156" y="433" width="350" height="48" rx="8" fill="#D6F0EF"/>
+      <text x="184" y="450">4</text><text x="234" y="450">'Dona Galinha'</text><text x="450" y="450">1</text>
+      <text x="184" y="474">5</text><text x="234" y="474">'Tatá'</text><text x="450" y="474">1</text>
+    </g>
+
+    <!-- câmara 2: índice -->
+    <rect x="610" y="164" width="420" height="200" rx="44" fill="#F6E4C6" stroke="#2E1B0D" stroke-width="8"/>
+    <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif">
+      <text x="644" y="206" font-size="19" font-weight="700" fill="#4A2A12">Índice hash · tatus.especie_id</text>
+      <text x="644" y="228" font-size="14" fill="#7A5A3A">valor → {rowids}: acha linhas sem varrer tudo</text>
+    </g>
+    <rect x="640" y="244" width="136" height="28" rx="8" fill="#D6F0EF"/>
+    <g font-family="Consolas,'Cascadia Code','DejaVu Sans Mono',monospace" font-size="16" fill="#3B2412">
+      <text x="652" y="264">1 → {4, 5}</text>
+      <text x="652" y="292">2 → {1}</text>
+      <text x="652" y="318">3 → {2}</text>
+      <text x="652" y="344">4 → {3}</text>
+    </g>
+    <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" fill="#2C6B6E">
+      <text x="800" y="264" font-family="Consolas,'DejaVu Sans Mono',monospace" font-weight="700">WHERE especie_id = 1</text>
+      <text x="800" y="286">o IndexScan vai direto</text>
+      <text x="800" y="306">às linhas 4 e 5 ↙</text>
+    </g>
+    <path d="M790 300 C700 380 600 400 512 446" fill="none" stroke="#3E8E92" stroke-width="2.5" stroke-dasharray="6 5" marker-end="url(#seta)"/>
+
+    <!-- câmara 3: diário -->
+    <rect x="610" y="410" width="420" height="152" rx="40" fill="#F6E4C6" stroke="#2E1B0D" stroke-width="8"/>
+    <g font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif">
+      <text x="644" y="448" font-size="19" font-weight="700" fill="#4A2A12">Diário (undo log)</text>
+      <text x="644" y="470" font-size="14" fill="#7A5A3A">para cada mudança, uma função que a desfaz</text>
+    </g>
+    <g font-family="Consolas,'Cascadia Code','DejaVu Sans Mono',monospace" font-size="15" fill="#3B2412">
+      <text x="644" y="500">1. INSERT → remover rowid 6</text>
+      <text x="644" y="524">2. UPDATE → restaurar rowid 3</text>
+    </g>
+    <text x="644" y="548" font-family="'Trebuchet MS','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="14" font-weight="700" fill="#B0533F">ROLLBACK desfaz de baixo para cima ↑</text>
+
+    <!-- o tatu, olhando para a toca -->
+    <g transform="translate(330 43) scale(-0.42 0.42)">
+      <path d="M66 140 C46 148 26 164 10 184 C30 177 50 167 72 158 Z" fill="#B57A43" stroke="#5A3519" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M50 150 L55 164 M36 161 L42 172 M24 171 L29 179" stroke="#5A3519" stroke-width="2" opacity=".55" stroke-linecap="round"/>
+      <rect x="116" y="146" width="24" height="38" rx="10" fill="#7A4A22" stroke="#5A3519" stroke-width="3"/>
+      <rect x="206" y="146" width="24" height="38" rx="10" fill="#7A4A22" stroke="#5A3519" stroke-width="3"/>
+      <rect x="82" y="140" width="26" height="44" rx="11" fill="#8C5A2B" stroke="#5A3519" stroke-width="3"/>
+      <rect x="238" y="140" width="26" height="44" rx="11" fill="#8C5A2B" stroke="#5A3519" stroke-width="3"/>
+      <path d="M56 152 C52 92 98 40 166 38 C236 36 282 88 282 152 Q169 168 56 152 Z" fill="url(#casco-grad)"/>
+      <g clip-path="url(#clip-casco)">
+        <rect x="40" y="20" width="90" height="150" fill="url(#escamas)"/>
+        <rect x="212" y="20" width="80" height="150" fill="url(#escamas)"/>
+        <path d="M142 20 Q147 95 142 175 L156 175 Q161 95 156 20 Z" fill="#000" opacity=".08"/>
+        <path d="M170 20 Q175 95 170 175 L184 175 Q189 95 184 20 Z" fill="#000" opacity=".08"/>
+        <path d="M198 20 Q203 95 198 175 L212 175 Q217 95 212 20 Z" fill="#000" opacity=".08"/>
+        <path d="M128 20 Q133 95 128 175 M142 20 Q147 95 142 175 M156 20 Q161 95 156 175 M170 20 Q175 95 170 175 M184 20 Q189 95 184 175 M198 20 Q203 95 198 175 M212 20 Q217 95 212 175" fill="none" stroke="#6E4220" stroke-width="3"/>
+        <path d="M56 150 Q169 166 282 150" fill="none" stroke="#7A4A22" stroke-width="10" opacity=".35"/>
+      </g>
+      <path d="M90 94 C102 68 126 54 150 49" fill="none" stroke="#FFF3DE" stroke-width="6" stroke-linecap="round" opacity=".6"/>
+      <path d="M56 152 C52 92 98 40 166 38 C236 36 282 88 282 152 Q169 168 56 152 Z" fill="none" stroke="#5A3519" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M262 104 C255 86 259 70 270 65 C279 76 279 93 273 108 Z" fill="#8C5A2B" stroke="#5A3519" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M266 99 C262 87 265 77 270 73 C275 82 274 92 271 101 Z" fill="#D9A57A"/>
+      <path d="M252 118 C258 100 280 96 296 108 C308 117 318 132 330 146 C334 151 330 157 323 156 C306 154 286 156 270 156 C256 156 248 136 252 118 Z" fill="#C48A55" stroke="#5A3519" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M256 115 C264 103 282 101 294 110 C285 112 270 116 258 124 Z" fill="#A86E3A" opacity=".75"/>
+      <ellipse cx="297" cy="142" rx="7" ry="4" fill="#E88A7A" opacity=".45"/>
+      <circle cx="286" cy="126" r="5" fill="#2B1A0E"/>
+      <circle cx="287.8" cy="124.2" r="1.6" fill="#FFFFFF"/>
+      <ellipse cx="327" cy="150" rx="4" ry="3.2" fill="#2B1A0E"/>
+    </g>
+  </g>
+</svg>
