@@ -1,0 +1,12 @@
+# Mantém as actions dos workflows atualizadas (o Tatu DB não tem dependências Python).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
+    groups:
+      actions:
+        patterns: ["*"]

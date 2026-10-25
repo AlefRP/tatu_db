@@ -1,0 +1,107 @@
+# 📦 Gera todos os pacotes do Tatu DB e testa cada um instalando de verdade.
+#
+# É um workflow reutilizável: o CI o chama a cada push (os pacotes ficam como
+# artefatos da execução) e o Release o chama para publicar uma versão.
+
+name: Pacotes
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUTF8: "1"
+
+jobs:
+  python:
+    name: 🐍 wheel + sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Ferramentas
+        run: python -m pip install build twine
+      - name: Gera wheel e sdist
+        run: python -m build
+      - name: Confere os metadados
+        run: python -m twine check --strict dist/*
+      - name: Instala a wheel num ambiente limpo e testa
+        run: |
+          python -m venv /tmp/limpo
+          /tmp/limpo/bin/pip install dist/*.whl
+          /tmp/limpo/bin/tatu -c "SELECT 'wheel ok' AS status"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tatu-python
+          path: dist/*
+          if-no-files-found: error
+
+  binarios:
+    name: 📦 ${{ matrix.nome }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - nome: Linux x86_64 (.tar.gz + .deb)
+            os: ubuntu-22.04        # glibc mais antiga = roda em mais distribuições
+            artefato: tatu-linux
+          - nome: macOS Apple Silicon (.tar.gz + .pkg)
+            os: macos-latest
+            artefato: tatu-macos
+          - nome: Windows x86_64 (.zip + setup.exe)
+            os: windows-latest
+            artefato: tatu-windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Instala o PyInstaller
+        run: python -m pip install pyinstaller
+      - name: Gera o executável (e testa)
+        run: python packaging/build_binary.py
+
+      - name: Pacote .deb (e testa instalando)
+        if: runner.os == 'Linux'
+        run: |
+          sh packaging/linux/build_deb.sh
+          sudo apt-get install -y ./dist/release/*.deb
+          tatu -c "SELECT 'deb ok' AS status"
+          sudo apt-get remove -y tatu-db
+
+      - name: Instalador .pkg (e testa instalando)
+        if: runner.os == 'macOS'
+        run: |
+          sh packaging/macos/build_pkg.sh
+          sudo installer -pkg dist/release/*.pkg -target /
+          /usr/local/bin/tatu -c "SELECT 'pkg ok' AS status"
+
+      - name: Instalador setup.exe (e testa instalando)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          $version = python -c "import tatu; print(tatu.__version__)"
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Qp "/DAppVersion=$version" packaging\windows\tatu.iss
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $setup = Get-ChildItem dist\release\*-setup.exe | Select-Object -First 1
+          Start-Process $setup.FullName -Wait -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/TASKS=addtopath"
+          $installed = "$env:LOCALAPPDATA\Programs\Tatu DB"
+          & "$installed\tatu.exe" -c "SELECT 'setup ok' AS status"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+          if (-not ($userPath -split ";" -contains $installed)) { throw "o instalador não colocou o tatu no PATH" }
+          Start-Process "$installed\unins000.exe" -Wait -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES"
+          if (Test-Path "$installed\tatu.exe") { throw "a desinstalação deixou o tatu.exe para trás" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artefato }}
+          path: dist/release/*
+          if-no-files-found: error

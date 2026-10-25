@@ -1,0 +1,45 @@
+# 🤖 Claude Code no GitHub: mencione `@claude` numa issue, num pull request ou
+# num comentário e o Claude responde, revisa ou abre um PR com a mudança.
+#
+# Configuração (uma vez só): no Claude Code, rode /install-github-app — ou crie
+# manualmente o segredo ANTHROPIC_API_KEY em Settings → Secrets and variables → Actions.
+# O Claude segue as regras de CLAUDE.md e pode usar as skills e os agentes de .claude/.
+
+name: Claude
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  pull_request_review:
+    types: [submitted]
+  issues:
+    types: [opened, assigned]
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: |
+            --allowedTools "Bash(python -m unittest:*),Bash(python -m tatu:*),Bash(python scripts/check_docs.py),Bash(ruff check:*)"

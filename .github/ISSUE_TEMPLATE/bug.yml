@@ -1,0 +1,53 @@
+name: 🐛 Bug
+description: Algo não funciona como deveria (resultado errado, erro estranho, instalador que falha...)
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por ajudar o tatu! 🐾 Quanto mais fácil for reproduzir, mais rápido conseguimos corrigir.
+  - type: textarea
+    id: o-que-aconteceu
+    attributes:
+      label: O que aconteceu?
+      description: Descreva o problema em poucas frases.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduzir
+    attributes:
+      label: Como reproduzir
+      description: O SQL (ou os passos) que mostram o problema. Se possível, comece com `.demo` ou com os CREATE TABLE necessários.
+      render: sql
+      placeholder: |
+        CREATE TABLE t (x INTEGER);
+        INSERT INTO t VALUES (1), (NULL);
+        SELECT COUNT(x) FROM t;
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que você esperava?
+      description: E, se souber, como o SQLite ou o PostgreSQL se comportam no mesmo caso.
+    validations:
+      required: true
+  - type: dropdown
+    id: instalacao
+    attributes:
+      label: Como você instalou?
+      options:
+        - Código-fonte (git clone)
+        - Script install.sh / install.ps1
+        - Instalador (setup.exe / .pkg / .deb)
+        - Executável portátil
+        - pip / pipx
+    validations:
+      required: true
+  - type: input
+    id: ambiente
+    attributes:
+      label: Sistema e versões
+      placeholder: "Windows 11, Python 3.13, Tatu DB 0.1.0 (tatu --version)"
+    validations:
+      required: true

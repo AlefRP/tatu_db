@@ -1,0 +1,31 @@
+name: 💡 Ideia
+description: Um recurso novo, uma melhoria na documentação ou um exercício para a trilha
+labels: ["ideia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Lembre que o Tatu DB é **educacional**: as melhores ideias deixam o banco mais fácil de **entender**.
+        Otimizações complexas costumam virar exercícios em `docs/09-exercicios.md` — o que também é ótimo!
+  - type: textarea
+    id: ideia
+    attributes:
+      label: Qual é a ideia?
+    validations:
+      required: true
+  - type: textarea
+    id: aprendizado
+    attributes:
+      label: O que alguém aprenderia com isso?
+      description: Que conceito de banco de dados essa ideia ajuda a ensinar?
+  - type: textarea
+    id: exemplo
+    attributes:
+      label: Exemplo de uso
+      render: sql
+  - type: checkboxes
+    id: ajuda
+    attributes:
+      label: Quer implementar?
+      options:
+        - label: Gostaria de abrir o pull request (o CONTRIBUTING.md explica o caminho)

@@ -1,0 +1,72 @@
+# 🚀 Publica uma versão nova quando uma tag vX.Y.Z é enviada:
+#
+#   git tag v0.2.0 && git push origin v0.2.0
+#
+# Gera todos os pacotes (via pacotes.yml), cria o GitHub Release com as notas
+# do CHANGELOG.md e, se a variável PUBLICAR_NO_PYPI for "true", publica no PyPI.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  conferir:
+    name: 🔖 Confere a versão
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: A tag bate com tatu/__init__.py?
+        run: |
+          VERSION="$(python3 -c 'import tatu; print(tatu.__version__)')"
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::A tag $GITHUB_REF_NAME não bate com a versão $VERSION de tatu/__init__.py"
+            exit 1
+          fi
+      - name: Há notas no CHANGELOG.md?
+        run: python3 scripts/release_notes.py "${GITHUB_REF_NAME#v}" > /dev/null
+
+  pacotes:
+    name: 📦 Pacotes
+    needs: conferir
+    uses: ./.github/workflows/pacotes.yml
+
+  publicar:
+    name: 🚀 GitHub Release
+    needs: pacotes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Cria o release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/release_notes.py "${GITHUB_REF_NAME#v}" > notas.md
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "🐾 Tatu DB ${GITHUB_REF_NAME}" \
+            --notes-file notas.md
+
+  pypi:
+    name: 🐍 PyPI
+    needs: pacotes
+    if: vars.PUBLICAR_NO_PYPI == 'true'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write   # "trusted publishing": não precisa de senha nem token
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: tatu-python
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 📚 Trilha de aprendizado
+    url: https://github.com/AlefRP/tatu_db/tree/main/docs
+    about: Antes de perguntar, vale dar uma olhada nos capítulos — talvez a resposta esteja lá.
+  - name: 📦 Problemas de instalação
+    url: https://github.com/AlefRP/tatu_db/blob/main/docs/instalacao.md#-problemas-comuns
+    about: Soluções para os problemas mais comuns em Windows, macOS e Linux.
