@@ -37,10 +37,10 @@ jobs:
     name: 🐍 wheel + sdist
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Ferramentas
@@ -54,7 +54,7 @@ jobs:
           python -m venv /tmp/limpo
           /tmp/limpo/bin/pip install dist/*.whl
           /tmp/limpo/bin/tatu -c "SELECT 'wheel ok' AS status"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tatu-python
           path: dist/*
@@ -83,10 +83,10 @@ jobs:
             artefato: tatu-windows-x86_64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Instala o PyInstaller
@@ -143,7 +143,7 @@ jobs:
         shell: bash
         run: ls -la dist/release
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artefato }}
           path: dist/release/*

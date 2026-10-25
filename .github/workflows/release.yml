@@ -47,7 +47,7 @@ jobs:
     outputs:
       versao: ${{ steps.versao.outputs.versao }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
       - name: A tag bate com tatu/__init__.py?
@@ -82,10 +82,10 @@ jobs:
       GH_REPO: ${{ github.repository }}
       VERSAO: ${{ needs.conferir.outputs.versao }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
@@ -119,7 +119,7 @@ jobs:
       TATU_REF: ${{ inputs.tag || github.ref_name }}
       VERSAO: ${{ needs.conferir.outputs.versao }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.TAG }}
       - name: install.sh baixando o executável do Release
@@ -149,7 +149,7 @@ jobs:
     permissions:
       id-token: write   # "trusted publishing": não precisa de senha nem token
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: tatu-python
           path: dist
