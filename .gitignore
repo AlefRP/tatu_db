@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.ruff_cache/
+
+# bancos criados enquanto você brinca
+*.tatu
+*.tatu.tmp
+
+# configurações locais do Claude Code (as do projeto ficam em .claude/settings.json)
+.claude/settings.local.json

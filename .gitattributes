@@ -1,0 +1,6 @@
+# Texto sempre com LF no repositório (os scripts de shell quebram com CRLF).
+* text=auto eol=lf
+
+# Binários
+*.png binary
+*.ico binary
