@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(python -m unittest:*)",
+      "Bash(python3 -m unittest:*)",
+      "Bash(python -m tatu:*)",
+      "Bash(python3 -m tatu:*)",
+      "Bash(python scripts/check_docs.py)",
+      "Bash(python3 scripts/check_docs.py)",
+      "Bash(python examples/primeiros_passos.py)",
+      "Bash(ruff check:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && if command -v python >/dev/null 2>&1; then python .claude/hooks/testes_rapidos.py; else python3 .claude/hooks/testes_rapidos.py; fi",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
