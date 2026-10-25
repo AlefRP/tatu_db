@@ -4,7 +4,8 @@
 ;   python packaging\build_binary.py
 ;   iscc /DAppVersion=0.1.0 packaging\windows\tatu.iss
 ;
-; Resultado: dist\release\tatu-<versão>-windows-x86_64-setup.exe
+; Resultado: dist\release\tatu-windows-x86_64-setup.exe (sem a versão no nome: assim o link
+; releases/latest/download/tatu-windows-x86_64-setup.exe sempre baixa a mais nova)
 ; Instala sem pedir administrador (na pasta do usuário), cria atalho no menu
 ; Iniciar e, se você quiser, coloca o comando `tatu` no PATH.
 
@@ -32,7 +33,7 @@ SetupIconFile=..\icons\tatu.ico
 UninstallDisplayIcon={app}\tatu.ico
 UninstallDisplayName=Tatu DB {#AppVersion}
 OutputDir=..\..\dist\release
-OutputBaseFilename=tatu-{#AppVersion}-windows-x86_64-setup
+OutputBaseFilename=tatu-windows-x86_64-setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

@@ -2,12 +2,29 @@
 #
 # É um workflow reutilizável: o CI o chama a cada push (os pacotes ficam como
 # artefatos da execução) e o Release o chama para publicar uma versão.
+#
+#   Windows x64         → tatu-windows-x86_64-setup.exe · tatu-windows-x86_64.zip
+#   macOS Apple Silicon → tatu-macos-arm64.pkg          · tatu-macos-arm64.tar.gz
+#   macOS Intel         → tatu-macos-x86_64.pkg         · tatu-macos-x86_64.tar.gz
+#   Linux x64           → tatu-linux-x86_64.deb · .rpm  · tatu-linux-x86_64.tar.gz
+#   Linux ARM64         → tatu-linux-arm64.deb  · .rpm  · tatu-linux-arm64.tar.gz
+#   Python              → wheel + sdist
 
 name: Pacotes
 
 on:
   workflow_call:
+    inputs:
+      ref:
+        description: Commit, branch ou tag a empacotar (vazio = o do evento)
+        type: string
+        default: ""
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit, branch ou tag a empacotar (vazio = main)
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -21,6 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
@@ -47,18 +66,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - nome: Linux x86_64 (.tar.gz + .deb)
-            os: ubuntu-22.04        # glibc mais antiga = roda em mais distribuições
-            artefato: tatu-linux
-          - nome: macOS Apple Silicon (.tar.gz + .pkg)
+          - nome: Linux x64 (.deb · .rpm · .tar.gz)
+            os: ubuntu-22.04          # glibc mais antiga = roda em mais distribuições
+            artefato: tatu-linux-x86_64
+          - nome: Linux ARM64 (.deb · .rpm · .tar.gz)
+            os: ubuntu-22.04-arm
+            artefato: tatu-linux-arm64
+          - nome: macOS Apple Silicon (.pkg · .tar.gz)
             os: macos-latest
-            artefato: tatu-macos
-          - nome: Windows x86_64 (.zip + setup.exe)
+            artefato: tatu-macos-arm64
+          - nome: macOS Intel (.pkg · .tar.gz)
+            os: macos-15-intel
+            artefato: tatu-macos-x86_64
+          - nome: Windows x64 (setup.exe · .zip)
             os: windows-latest
-            artefato: tatu-windows
+            artefato: tatu-windows-x86_64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
@@ -75,12 +102,22 @@ jobs:
           tatu -c "SELECT 'deb ok' AS status"
           sudo apt-get remove -y tatu-db
 
+      - name: Pacote .rpm (e testa instalando num Fedora)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y rpm
+          sh packaging/linux/build_rpm.sh
+          docker run --rm -v "$PWD/dist/release:/pacotes:ro" fedora:41 \
+            sh -c 'rpm -i /pacotes/*.rpm && tatu -c "SELECT 6 * 7 AS rpm_ok" && rpm -e tatu-db'
+
       - name: Instalador .pkg (e testa instalando)
         if: runner.os == 'macOS'
         run: |
           sh packaging/macos/build_pkg.sh
           sudo installer -pkg dist/release/*.pkg -target /
           /usr/local/bin/tatu -c "SELECT 'pkg ok' AS status"
+          sudo rm /usr/local/bin/tatu
+          sudo pkgutil --forget io.github.alefrp.tatu-db
 
       - name: Instalador setup.exe (e testa instalando)
         if: runner.os == 'Windows'
@@ -90,8 +127,8 @@ jobs:
           $version = python -c "import tatu; print(tatu.__version__)"
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Qp "/DAppVersion=$version" packaging\windows\tatu.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
-          $setup = Get-ChildItem dist\release\*-setup.exe | Select-Object -First 1
-          Start-Process $setup.FullName -Wait -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/TASKS=addtopath"
+          $setup = "dist\release\tatu-windows-x86_64-setup.exe"
+          Start-Process $setup -Wait -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/TASKS=addtopath"
           $installed = "$env:LOCALAPPDATA\Programs\Tatu DB"
           & "$installed\tatu.exe" -c "SELECT 'setup ok' AS status"
           if ($LASTEXITCODE -ne 0) { exit 1 }
@@ -101,6 +138,10 @@ jobs:
           # o desinstalador se copia para a pasta temporária e continua de lá: espera ele terminar
           foreach ($i in 1..30) { if (-not (Test-Path "$installed\tatu.exe")) { break }; Start-Sleep -Seconds 1 }
           if (Test-Path "$installed\tatu.exe") { throw "a desinstalação deixou o tatu.exe para trás" }
+
+      - name: Lista os pacotes
+        shell: bash
+        run: ls -la dist/release
 
       - uses: actions/upload-artifact@v4
         with:

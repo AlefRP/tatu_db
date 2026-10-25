@@ -4,14 +4,18 @@
     pip install pyinstaller
     python packaging/build_binary.py
 
-Resultado em ``dist/release/``:
+Resultado em ``dist/release/`` (um destes, conforme o sistema):
 
-    tatu-<versão>-linux-x86_64.tar.gz
-    tatu-<versão>-macos-arm64.tar.gz
-    tatu-<versão>-windows-x86_64.zip
+    tatu-linux-x86_64.tar.gz     tatu-linux-arm64.tar.gz
+    tatu-macos-arm64.tar.gz      tatu-macos-x86_64.tar.gz
+    tatu-windows-x86_64.zip
+
+Os nomes não têm a versão de propósito: assim o link
+``releases/latest/download/<nome>`` sempre aponta para a versão mais nova,
+e os instaladores de uma linha sabem o que baixar.
 
 O executável solto fica em ``build/pyinstaller/dist/`` — é dele que os scripts
-de .deb, .pkg e do instalador do Windows partem.
+de .deb, .rpm, .pkg e do instalador do Windows partem.
 """
 
 import platform
@@ -68,7 +72,7 @@ def smoke_test(exe: Path) -> None:
 
 def archive(exe: Path) -> Path:
     RELEASE.mkdir(parents=True, exist_ok=True)
-    base = f"tatu-{__version__}-{platform_name()}"
+    base = f"tatu-{platform_name()}"
     extras = [ROOT / "README.md", ROOT / "LICENSE"]
     if sys.platform == "win32":
         target = RELEASE / f"{base}.zip"

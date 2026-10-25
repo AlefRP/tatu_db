@@ -4,7 +4,8 @@
 #   python packaging/build_binary.py      # primeiro, o executável
 #   sh packaging/linux/build_deb.sh       # depois, o .deb em dist/release/
 #
-# Instalar:     sudo apt install ./dist/release/tatu-db_<versão>_amd64.deb
+# Resultado: dist/release/tatu-linux-x86_64.deb (ou -arm64.deb)
+# Instalar:     sudo apt install ./tatu-linux-x86_64.deb
 # Desinstalar:  sudo apt remove tatu-db
 
 set -eu
@@ -12,9 +13,14 @@ set -eu
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 EXE="$ROOT/build/pyinstaller/dist/tatu"
 VERSION="$(sed -n 's/^__version__ = "\(.*\)"/\1/p' "$ROOT/tatu/__init__.py")"
-ARCH="$(dpkg --print-architecture)"
+ARCH="$(dpkg --print-architecture)"            # amd64 ou arm64 (nomes do Debian)
+case "$ARCH" in
+    amd64) ARCH_NAME="x86_64" ;;
+    *)     ARCH_NAME="$ARCH" ;;
+esac
 PKG="$ROOT/build/deb/tatu-db_${VERSION}_${ARCH}"
 OUT="$ROOT/dist/release"
+TARGET="$OUT/tatu-linux-${ARCH_NAME}.deb"
 
 [ -x "$EXE" ] || { echo "Executável não encontrado: rode python packaging/build_binary.py" >&2; exit 1; }
 
@@ -38,5 +44,5 @@ Description: banco de dados relacional educacional, feito do zero em Python
  operadores, índices e transações. Rode "tatu" e digite ".demo".
 EOF
 
-dpkg-deb --build --root-owner-group "$PKG" "$OUT/tatu-db_${VERSION}_${ARCH}.deb"
-echo "✔ pacote: dist/release/tatu-db_${VERSION}_${ARCH}.deb"
+dpkg-deb --build --root-owner-group "$PKG" "$TARGET"
+echo "✔ pacote: dist/release/$(basename "$TARGET")"
