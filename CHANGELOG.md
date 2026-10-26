@@ -8,12 +8,19 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ### 🦔 Toca
 
+- Escala de alta resolução consistente entre fontes, ícones, margens e linhas; janela nítida no Windows.
+- Colunas mantêm larguras de leitura e o editor não se estica ao maximizar; o espaço extra vai aos resultados.
 - Cliente gráfico próprio em Python/Tkinter, com ícone, temas claro e escuro, editor SQL com cores,
   navegador de tabelas, grade de resultados, estrutura e histórico de consultas.
 - Abrir, criar e salvar bancos `.tatu`, abrir/salvar consultas SQL, exportar CSV e controlar transações.
 - Laboratório de exemplo em memória e confirmação ao trocar de banco ou fechar com trabalho pendente.
 - Entradas `python -m tatu.toca`, `python -m tatu --gui` e `toca` para a instalação Python.
-- Construção opcional do executável gráfico com `python packaging/build_binary.py --gui`.
+- Instaladores conjuntos do banco e do cliente: Windows com atalhos e abertura opcional de `.tatu`,
+  Linux com entrada no menu de aplicativos e macOS com `Toca.app`.
+- Construção conjunta com `--all` e instalador Windows em um comando com `--installer`;
+  `--gui` continua disponível para gerar somente o cliente.
+- Portáteis e scripts de instalação incluem o comando `toca`, mantendo compatibilidade com versões antigas.
+- Verificação `toca --smoke-test` executa SQL e confere a grade; o CI verifica também o cliente instalado.
 - Identificadores entre aspas duplas aceitam aspas escapadas, preservando nomes vindos de arquivos `.tatu`.
 
 ## [0.1.0] - 2026-10-25
@@ -57,7 +64,7 @@ A primeira versão do tatu saiu da toca! 🐾
 
 ### ⚙️ Projeto
 
-- 117 testes; CI em Windows, macOS e Linux com Python 3.10 a 3.14.
+- Suíte inicial com 88 casos de teste; CI em Windows, macOS e Linux com Python 3.10 a 3.14.
 - Lançamento com um clique no GitHub Actions (workflow "Nova versão"): sobe a versão, fecha o
   CHANGELOG, cria a tag, publica o Release e instala o que foi publicado em cada sistema para conferir.
 - Configuração para o Claude Code: `CLAUDE.md`, skills, agentes, hook de testes e workflow `@claude`.

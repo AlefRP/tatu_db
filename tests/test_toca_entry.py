@@ -4,9 +4,18 @@ import unittest
 from unittest.mock import patch
 
 from tatu.repl import main
+from tatu.toca import main as gui_main
 
 
 class TocaEntryTest(unittest.TestCase):
+    def test_verificacao_do_pacote_nao_aceita_arquivo_nem_demo(self):
+        for arguments in (["--smoke-test", "importante.tatu"], ["--smoke-test", "--demo"]):
+            with self.subTest(arguments=arguments), patch("sys.stderr"), \
+                    patch("tatu.toca.tk") as tkinter, self.assertRaises(SystemExit) as context:
+                gui_main(arguments)
+            self.assertEqual(context.exception.code, 2)
+            tkinter.Tk.assert_not_called()
+
     def test_gui_encaminha_arquivo_sem_abrir_shell(self):
         with patch("tatu.toca.main", return_value=0) as gui_main:
             self.assertEqual(main(["--gui", "meu banco.tatu"]), 0)

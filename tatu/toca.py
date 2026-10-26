@@ -8,10 +8,12 @@ interromper a edição. Nenhum widget é acessado fora da thread principal.
 from __future__ import annotations
 
 import argparse
+import os
 import queue
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
+from fractions import Fraction
 from pathlib import Path
 
 try:
@@ -23,6 +25,7 @@ except ImportError:
 
 from .errors import TatuError
 from .result import format_cell
+from .toca_display import DisplayMetrics, enable_dpi_awareness
 from .toca_session import Session, export_csv, read_sql, write_sql
 from .tokenizer import KEYWORDS
 
@@ -106,7 +109,11 @@ class TocaApp:
     def __init__(self, root=None, session=None):
         if tk is None:
             raise RuntimeError("O Python não inclui Tkinter. Instale o suporte Tk para abrir a Toca.")
+        if root is None:
+            enable_dpi_awareness()
         self.root = root or tk.Tk()
+        self.display = DisplayMetrics(self.root)
+        self.dp = self.display.px
         self.session = session or Session()
         self.query_path = None
         self._saved_sql = ""
@@ -158,13 +165,20 @@ class TocaApp:
         self.body_font = (self.body_family, 10)
         self.small_font = (self.body_family, 9)
         self.mono_font = (self.mono_family, 11)
+        self.measure_font = tkfont.Font(root=self.root, font=self.body_font)
 
     def _frame(self, parent, role="bg", **kwargs):
+        for key in ("width", "height", "padx", "pady"):
+            if key in kwargs:
+                kwargs[key] = self.dp(kwargs[key])
         frame = tk.Frame(parent, borderwidth=0, **kwargs)
         self._styled_frames.append((frame, role))
         return frame
 
     def _label(self, parent, text=None, role="bg", tone="text", **kwargs):
+        for key in ("padx", "pady", "wraplength"):
+            if key in kwargs:
+                kwargs[key] = self.dp(kwargs[key])
         kwargs.setdefault("font", self.body_font)
         kwargs.setdefault("anchor", "w")
         label = tk.Label(parent, text=text, borderwidth=0, **kwargs)
@@ -181,8 +195,7 @@ class TocaApp:
     def _build_window(self):
         root = self.root
         root.title("Toca · Tatu DB")
-        root.geometry("1220x800")
-        root.minsize(920, 640)
+        self.display.configure_window()
         root.columnconfigure(1, weight=1)
         root.rowconfigure(0, weight=1)
         self.style = ttk.Style(root)
@@ -193,7 +206,7 @@ class TocaApp:
         self.sidebar.columnconfigure(0, weight=1)
         self.sidebar.rowconfigure(4, weight=1)
         branding = self._frame(self.sidebar, "sidebar")
-        branding.grid(row=0, column=0, sticky="ew", padx=20, pady=(24, 25))
+        branding.grid(row=0, column=0, sticky="ew", padx=self.dp(20), pady=self.dp((24, 25)))
         icon_path = Path(__file__).with_name("assets") / "toca.png"
         self.icon = None
         if icon_path.is_file():
@@ -201,8 +214,11 @@ class TocaApp:
                 full_icon = tk.PhotoImage(master=root, file=str(icon_path))
                 root.iconphoto(True, full_icon)
                 self.full_icon = full_icon
-                self.icon = full_icon.subsample(max(1, full_icon.width() // 48))
-                self._label(branding, image=self.icon, role="sidebar").pack(side="left", padx=(0, 12))
+                ratio = Fraction(self.dp(48), full_icon.width()).limit_denominator(16)
+                self.icon = full_icon.zoom(ratio.numerator).subsample(ratio.denominator)
+                self._label(branding, image=self.icon, role="sidebar").pack(
+                    side="left", padx=self.dp((0, 12))
+                )
             except tk.TclError:
                 pass
         brand_text = self._frame(branding, "sidebar")
@@ -212,10 +228,10 @@ class TocaApp:
             anchor="w"
         )
         connection = self._frame(self.sidebar, "sidebar")
-        connection.grid(row=1, column=0, sticky="ew", padx=22)
+        connection.grid(row=1, column=0, sticky="ew", padx=self.dp(22))
         self._label(
             connection, "●  CONEXÃO LOCAL", role="sidebar", tone="accent", font=(self.body_family, 9, "bold")
-        ).pack(anchor="w", pady=(0, 12))
+        ).pack(anchor="w", pady=self.dp((0, 12)))
         self._label(
             connection,
             textvariable=self.connection_var,
@@ -230,24 +246,24 @@ class TocaApp:
             tone="muted",
             font=self.small_font,
             wraplength=190,
-        ).pack(anchor="w", pady=(7, 0))
-        ttk.Separator(self.sidebar).grid(row=2, column=0, sticky="ew", padx=22, pady=22)
+        ).pack(anchor="w", pady=self.dp((7, 0)))
+        ttk.Separator(self.sidebar).grid(row=2, column=0, sticky="ew", padx=self.dp(22), pady=self.dp(22))
         self._label(
             self.sidebar,
             textvariable=self.table_count_var,
             role="sidebar",
             tone="muted",
             font=(self.body_family, 9, "bold"),
-        ).grid(row=3, column=0, sticky="ew", padx=22, pady=(0, 10))
+        ).grid(row=3, column=0, sticky="ew", padx=self.dp(22), pady=self.dp((0, 10)))
         table_area = self._frame(self.sidebar, "sidebar")
-        table_area.grid(row=4, column=0, sticky="nsew", padx=(12, 6))
+        table_area.grid(row=4, column=0, sticky="nsew", padx=self.dp((12, 6)))
         table_area.rowconfigure(0, weight=1)
         table_area.columnconfigure(0, weight=1)
         self.table_tree = ttk.Treeview(
             table_area, show="tree", columns=("rows",), selectmode="browse", style="Catalog.Treeview"
         )
-        self.table_tree.column("#0", width=152, minwidth=90, stretch=True)
-        self.table_tree.column("rows", width=40, minwidth=35, anchor="e", stretch=False)
+        self.table_tree.column("#0", width=self.dp(152), minwidth=self.dp(90), stretch=True)
+        self.table_tree.column("rows", width=self.dp(40), minwidth=self.dp(35), anchor="e", stretch=False)
         self.table_tree.grid(row=0, column=0, sticky="nsew")
         catalog_scroll = ttk.Scrollbar(table_area, orient="vertical", command=self.table_tree.yview)
         catalog_scroll.grid(row=0, column=1, sticky="ns")
@@ -256,10 +272,10 @@ class TocaApp:
         self.table_tree.bind("<Double-1>", self.query_selected_table)
         self.table_tree.bind("<Return>", self.query_selected_table)
         self._button(self.sidebar, "Consultar tabela", self.query_selected_table).grid(
-            row=5, column=0, sticky="ew", padx=20, pady=(14, 18)
+            row=5, column=0, sticky="ew", padx=self.dp(20), pady=self.dp((14, 18))
         )
         self.persistence_card = self._frame(self.sidebar, "surface", padx=14, pady=13)
-        self.persistence_card.grid(row=6, column=0, sticky="ew", padx=18, pady=(0, 16))
+        self.persistence_card.grid(row=6, column=0, sticky="ew", padx=self.dp(18), pady=self.dp((0, 16)))
         self._label(
             self.persistence_card,
             "DO SEU JEITO",
@@ -275,44 +291,46 @@ class TocaApp:
             font=self.small_font,
             justify="left",
         )
-        self.persistence_label.pack(anchor="w", pady=(7, 0))
+        self.persistence_label.pack(anchor="w", pady=self.dp((7, 0)))
         side_actions = self._frame(self.sidebar, "sidebar")
-        side_actions.grid(row=7, column=0, sticky="ew", padx=18, pady=(0, 20))
+        side_actions.grid(row=7, column=0, sticky="ew", padx=self.dp(18), pady=self.dp((0, 20)))
         side_actions.columnconfigure((0, 1), weight=1)
-        self._button(side_actions, "Novo", self.new_database).grid(row=0, column=0, sticky="ew", padx=(0, 4))
+        self._button(side_actions, "Novo", self.new_database).grid(
+            row=0, column=0, sticky="ew", padx=self.dp((0, 4))
+        )
         self._button(side_actions, "Abrir", self.open_database).grid(
-            row=0, column=1, sticky="ew", padx=(4, 0)
+            row=0, column=1, sticky="ew", padx=self.dp((4, 0))
         )
 
         self.main = self._frame(root)
-        self.main.grid(row=0, column=1, sticky="nsew", padx=26, pady=(22, 16))
+        self.main.grid(row=0, column=1, sticky="nsew", padx=self.dp(26), pady=self.dp((22, 16)))
         self.main.columnconfigure(0, weight=1)
         self.main.rowconfigure(3, weight=1)
         header = self._frame(self.main)
         header.grid(row=0, column=0, sticky="ew")
         self._label(header, "Seu banco, por dentro.", font=(self.body_family, 19, "bold")).pack(anchor="w")
         self._label(header, "Explore os dados. Escreva SQL. Entenda o caminho.", tone="muted").pack(
-            anchor="w", pady=(6, 0)
+            anchor="w", pady=self.dp((6, 0))
         )
-        ttk.Separator(self.main).grid(row=1, column=0, sticky="ew", pady=(18, 16))
+        ttk.Separator(self.main).grid(row=1, column=0, sticky="ew", pady=self.dp((18, 16)))
         toolbar = self._frame(self.main)
-        toolbar.grid(row=2, column=0, sticky="ew", pady=(0, 12))
-        toolbar.columnconfigure(0, weight=1)
+        toolbar.grid(row=2, column=0, sticky="ew", pady=self.dp((0, 12)))
+        toolbar.columnconfigure(4, weight=1)
         query_title = self._frame(toolbar)
         query_title.grid(row=0, column=0, sticky="w")
         self._label(query_title, "Consulta SQL", font=(self.body_family, 11, "bold")).pack(anchor="w")
-        self._label(query_title, textvariable=self.query_name_var, tone="muted", font=self.small_font).pack(
-            anchor="w", pady=(2, 0)
-        )
+        self._label(
+            query_title, textvariable=self.query_name_var, tone="muted", font=self.small_font, width=25
+        ).pack(anchor="w", pady=self.dp((2, 0)))
         self.examples_button = ttk.Menubutton(toolbar, text="Exemplos", style="TMenubutton")
-        self.examples_button.grid(row=0, column=1, padx=(10, 7))
+        self.examples_button.grid(row=0, column=1, padx=self.dp((10, 7)))
         self.examples_menu = tk.Menu(self.examples_button, tearoff=False)
         self.examples_button.configure(menu=self.examples_menu)
         for label, sql in EXAMPLES:
             self.examples_menu.add_command(label=label, command=lambda value=sql: self.use_example(value))
         self._menus.append(self.examples_menu)
         self._controls.append(self.examples_button)
-        self._button(toolbar, "Salvar SQL", self.save_query).grid(row=0, column=2, padx=(0, 7))
+        self._button(toolbar, "Salvar SQL", self.save_query).grid(row=0, column=2, padx=self.dp((0, 7)))
         self.run_button = self._button(toolbar, "▶  Executar", self.run_query, accent=True)
         self.run_button.grid(row=0, column=3)
 
@@ -321,7 +339,7 @@ class TocaApp:
         self.editor_frame = self._frame(self.splitter, "editor")
         self.editor_frame.columnconfigure(1, weight=1)
         self.editor_frame.rowconfigure(0, weight=1)
-        self.line_numbers = tk.Canvas(self.editor_frame, width=43, highlightthickness=0)
+        self.line_numbers = tk.Canvas(self.editor_frame, width=self.dp(43), highlightthickness=0)
         self.line_numbers.grid(row=0, column=0, sticky="ns")
         self.editor = tk.Text(
             self.editor_frame,
@@ -331,11 +349,11 @@ class TocaApp:
             maxundo=200,
             borderwidth=0,
             highlightthickness=0,
-            padx=13,
-            pady=12,
-            spacing1=2,
-            spacing3=2,
-            height=11,
+            padx=self.dp(13),
+            pady=self.dp(12),
+            spacing1=self.dp(2),
+            spacing3=self.dp(2),
+            height=9,
             tabs=("4c",),
         )
         self.editor.grid(row=0, column=1, sticky="nsew")
@@ -350,12 +368,14 @@ class TocaApp:
         self.editor.bind("<ButtonRelease-1>", self._cursor_changed, add=True)
         self.editor.bind("<Configure>", self._redraw_lines, add=True)
         self.editor.bind("<Tab>", self._insert_indent)
-        self.splitter.add(self.editor_frame, weight=2)
+        # Ao maximizar, os resultados recebem o espaço extra. O editor
+        # mantém uma altura legível e ainda pode ser ampliado pelo divisor.
+        self.splitter.add(self.editor_frame, weight=0)
         output = self._frame(self.splitter)
         output.columnconfigure(0, weight=1)
         output.rowconfigure(0, weight=1)
         self.notebook = ttk.Notebook(output)
-        self.notebook.grid(row=0, column=0, sticky="nsew", pady=(14, 0))
+        self.notebook.grid(row=0, column=0, sticky="nsew", pady=self.dp((14, 0)))
         self.data_tab = self._frame(self.notebook, "surface")
         self.schema_tab = self._frame(self.notebook, "surface")
         self.history_tab = self._frame(self.notebook, "surface")
@@ -378,12 +398,12 @@ class TocaApp:
             font=self.mono_font,
             wrap="word",
             borderwidth=0,
-            padx=18,
-            pady=16,
+            padx=self.dp(18),
+            pady=self.dp(16),
             height=7,
         )
         self.messages.grid(row=0, column=0, rowspan=2, sticky="nsew")
-        self.splitter.add(output, weight=3)
+        self.splitter.add(output, weight=1)
         footer = self._frame(root, "sidebar", padx=18, pady=7)
         footer.grid(row=1, column=0, columnspan=2, sticky="ew")
         footer.columnconfigure(0, weight=1)
@@ -392,7 +412,7 @@ class TocaApp:
         ).grid(row=0, column=0, sticky="w")
         self._label(
             footer, textvariable=self.transaction_var, role="sidebar", tone="accent", font=self.small_font
-        ).grid(row=0, column=1, sticky="e", padx=(12, 18))
+        ).grid(row=0, column=1, sticky="e", padx=self.dp((12, 18)))
         self._label(
             footer, textvariable=self.cursor_var, role="sidebar", tone="muted", font=self.small_font
         ).grid(row=0, column=2, sticky="e")
@@ -404,7 +424,7 @@ class TocaApp:
         tree = ttk.Treeview(frame, columns=columns, show="headings", selectmode="browse")
         for col, label, width in zip(columns, headings, widths):
             tree.heading(col, text=label, anchor="w")
-            tree.column(col, width=width, minwidth=65, stretch=True)
+            tree.column(col, width=self.dp(width), minwidth=self.dp(65), stretch=False)
         tree.grid(row=0, column=0, sticky="nsew")
         y = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
         y.grid(row=0, column=1, sticky="ns")
@@ -416,17 +436,22 @@ class TocaApp:
     def _build_results(self):
         bar = self._frame(self.data_tab, "surface", padx=12, pady=10)
         bar.grid(row=0, column=0, sticky="ew")
-        bar.columnconfigure(0, weight=1)
+        bar.columnconfigure(4, weight=1)
         self._label(
-            bar, textvariable=self.result_summary_var, role="surface", tone="muted", font=self.small_font
+            bar,
+            textvariable=self.result_summary_var,
+            role="surface",
+            tone="muted",
+            font=self.small_font,
+            wraplength=260,
         ).grid(row=0, column=0, sticky="w")
         self.result_choice = ttk.Combobox(
             bar, textvariable=self.result_choice_var, width=18, state="readonly", style="TCombobox"
         )
-        self.result_choice.grid(row=0, column=1, padx=(12, 5))
+        self.result_choice.grid(row=0, column=1, padx=self.dp((12, 5)))
         self.result_choice.bind("<<ComboboxSelected>>", self._result_selected)
-        self._button(bar, "←", lambda: self._move_result(-1), width=3).grid(row=0, column=2, padx=2)
-        self._button(bar, "→", lambda: self._move_result(1), width=3).grid(row=0, column=3, padx=2)
+        self._button(bar, "←", lambda: self._move_result(-1), width=3).grid(row=0, column=2, padx=self.dp(2))
+        self._button(bar, "→", lambda: self._move_result(1), width=3).grid(row=0, column=3, padx=self.dp(2))
         tree_frame, self.result_tree = self._tree(self.data_tab, (), (), ())
         tree_frame.grid(row=1, column=0, sticky="nsew")
         self.result_tree.bind("<ButtonRelease-1>", self._select_cell)
@@ -574,7 +599,9 @@ class TocaApp:
             troughcolor=p["sidebar"],
             focuscolor=p["accent"],
         )
-        s.configure("TButton", background=p["surface"], padding=(12, 8), borderwidth=1, relief="flat")
+        s.configure(
+            "TButton", background=p["surface"], padding=self.dp((12, 7)), borderwidth=1, relief="flat"
+        )
         s.map(
             "TButton",
             background=[("active", p["selected"]), ("pressed", p["selected"])],
@@ -585,14 +612,14 @@ class TocaApp:
             background=p["accent"],
             foreground=p["accent_text"],
             font=(self.body_family, 10, "bold"),
-            padding=(17, 9),
+            padding=self.dp((17, 8)),
         )
         s.map(
             "Accent.TButton",
             background=[("active", p["accent_hover"]), ("disabled", p["muted"])],
             foreground=[("active", p["accent_text"]), ("disabled", p["bg"])],
         )
-        s.configure("TMenubutton", background=p["surface"], padding=(12, 8), relief="flat")
+        s.configure("TMenubutton", background=p["surface"], padding=self.dp((12, 7)), relief="flat")
         s.map("TMenubutton", background=[("active", p["selected"])])
         s.configure("TCombobox", fieldbackground=p["surface"], background=p["surface"], arrowcolor=p["muted"])
         s.map(
@@ -603,18 +630,23 @@ class TocaApp:
         )
         s.configure("TNotebook", background=p["bg"], borderwidth=0, tabmargins=(0, 0, 0, 0))
         s.configure(
-            "TNotebook.Tab", background=p["bg"], foreground=p["muted"], padding=(17, 10), borderwidth=0
+            "TNotebook.Tab",
+            background=p["bg"],
+            foreground=p["muted"],
+            padding=self.dp((17, 8)),
+            borderwidth=0,
         )
         s.map(
             "TNotebook.Tab", background=[("selected", p["surface"])], foreground=[("selected", p["accent"])]
         )
         s.configure("TPanedwindow", background=p["bg"])
+        s.configure("TScrollbar", arrowsize=self.dp(12), width=self.dp(12))
         s.configure(
             "Treeview",
             background=p["surface"],
             fieldbackground=p["surface"],
             foreground=p["text"],
-            rowheight=31,
+            rowheight=max(self.dp(28), self.measure_font.metrics("linespace") + self.dp(10)),
             borderwidth=0,
             font=self.body_font,
         )
@@ -623,7 +655,7 @@ class TocaApp:
             background=p["sidebar"],
             foreground=p["text"],
             font=(self.body_family, 9, "bold"),
-            padding=(10, 9),
+            padding=self.dp((10, 7)),
             relief="flat",
         )
         s.map("Treeview", background=[("selected", p["selected"])], foreground=[("selected", p["accent"])])
@@ -631,7 +663,7 @@ class TocaApp:
             "Catalog.Treeview",
             background=p["sidebar"],
             fieldbackground=p["sidebar"],
-            rowheight=37,
+            rowheight=max(self.dp(32), self.measure_font.metrics("linespace") + self.dp(12)),
             font=self.body_font,
         )
         for tree in (self.result_tree, self.schema_tree, self.history_tree):
@@ -725,8 +757,8 @@ class TocaApp:
             if info is None:
                 break
             self.line_numbers.create_text(
-                31,
-                info[1] + 2,
+                self.dp(31),
+                info[1] + self.dp(2),
                 anchor="ne",
                 text=index.split(".")[0],
                 font=(self.mono_family, 9),
@@ -898,7 +930,9 @@ class TocaApp:
             control.configure(state="disabled")
         self.result_choice.configure(state="disabled")
         future = self._worker.submit(self.session.run, sql)
-        future.add_done_callback(lambda item: self._mailbox.put(item))
+        # A tarefa de SQL só recebe a fila, sem manter a janela e seus
+        # objetos Tcl vivos na thread de trabalho durante o fechamento.
+        future.add_done_callback(self._mailbox.put)
         return "break"
 
     def _drain_mailbox(self):
@@ -967,10 +1001,12 @@ class TocaApp:
         columns = [f"col-{i}" for i in range(len(result.columns))]
         tree.configure(columns=columns)
         for i, (column, title) in enumerate(zip(columns, result.columns)):
-            values = [len(str(title))] + [min(100, len(format_cell(row[i]))) for row in result.rows[:80]]
-            width = max(105, min(340, max(values) * 8 + 26))
+            values = [self.measure_font.measure(str(title))] + [
+                self.measure_font.measure(format_cell(row[i])[:120]) for row in result.rows[:80]
+            ]
+            width = max(self.dp(105), min(self.dp(340), max(values) + self.dp(26)))
             tree.heading(column, text=title, anchor="w")
-            tree.column(column, width=width, minwidth=80, stretch=True, anchor="w")
+            tree.column(column, width=width, minwidth=self.dp(80), stretch=False, anchor="w")
         # O resultado completo continua disponível no motor e na exportação.
         # Limitar widgets evita milhares de objetos Tcl congelando a janela.
         self._displayed_rows = result.rows[:5000]
@@ -1309,9 +1345,37 @@ class TocaApp:
         for job in (self._poll_job, self._startup_job, self._highlight_job):
             if job is not None:
                 self.root.after_cancel(job)
-        self._worker.shutdown(wait=False, cancel_futures=True)
+        self._worker.shutdown(wait=True, cancel_futures=True)
         self.session.close()
         self.root.destroy()
+
+
+def _smoke_test(app):
+    """Confere widgets e execução SQL sem diálogos nem arquivos do usuário."""
+    app.root.withdraw()
+    app.root.after_cancel(app._startup_job)
+    app._startup_job = None
+    app.set_sql("SELECT 6 * 7 AS resposta;")
+    app.run_query()
+    exit_code = 1
+
+    def inspect_result():
+        nonlocal exit_code
+        if app._busy:
+            app.root.after(20, inspect_result)
+            return
+        items = app.result_tree.get_children()
+        if app._displayed_rows == [(42,)] and len(items) == 1:
+            values = app.result_tree.item(items[0], "values")
+            exit_code = 0 if tuple(map(str, values)) == ("42",) else 1
+        app.close()
+
+    # Este modo usa só uma sessão em memória. Se a tarefa de SQL travar,
+    # encerra também a thread de trabalho, sem manter o instalador esperando.
+    app.root.after(15000, lambda: os._exit(1))
+    app.root.after(20, inspect_result)
+    app.root.mainloop()
+    return exit_code
 
 
 def main(argv=None):
@@ -1319,9 +1383,12 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Toca: cliente gráfico do Tatu DB.")
     parser.add_argument("arquivo", nargs="?", help="arquivo .tatu para abrir ou criar")
     parser.add_argument("--demo", action="store_true", help="começa no laboratório de demonstração")
+    parser.add_argument("--smoke-test", action="store_true", help="verifica a interface e encerra")
     args = parser.parse_args(argv)
     if args.arquivo and args.demo:
         parser.error("escolha um arquivo ou --demo")
+    if args.smoke_test and (args.arquivo or args.demo):
+        parser.error("use --smoke-test sozinho; a verificação usa um banco isolado em memória")
     if tk is None:
         print(
             "A Toca precisa de Tkinter. No Linux, instale o pacote python3-tk da sua distribuição.\n"
@@ -1329,11 +1396,14 @@ def main(argv=None):
             file=sys.stderr,
         )
         return 2
+    enable_dpi_awareness()
     try:
         root = tk.Tk()
     except tk.TclError as error:
         print(f"Não foi possível abrir a interface gráfica: {error}", file=sys.stderr)
         return 2
+    if args.smoke_test:
+        return _smoke_test(TocaApp(root, Session(demo=False)))
     try:
         session = Session(demo=not args.arquivo)
         if args.arquivo:

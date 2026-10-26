@@ -7,7 +7,7 @@
   <a href="https://github.com/AlefRP/tatu_db/releases/latest"><img alt="Versão" src="https://img.shields.io/github/v/release/AlefRP/tatu_db?label=vers%C3%A3o&color=8C5A2B"></a>
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white">
   <img alt="Zero dependências" src="https://img.shields.io/badge/depend%C3%AAncias-zero-8C5A2B">
-  <img alt="117 testes" src="https://img.shields.io/badge/testes-117%20passando-6E9B3A">
+  <img alt="126 testes" src="https://img.shields.io/badge/testes-126%20passando-6E9B3A">
   <img alt="Windows, macOS e Linux" src="https://img.shields.io/badge/roda%20em-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-6FA8C7">
   <a href="LICENSE"><img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-E0A96D"></a>
 </p>
@@ -84,6 +84,10 @@ O cliente usa o motor do próprio projeto, com a mesma [referência SQL](docs/08
 ## 📦 Instalação
 
 **Baixe o instalador** (versão mais recente, não precisa de Python):
+
+Os instaladores gerados pelo projeto agora incluem o **Tatu DB** e o **Toca**. Abra o cliente pelo
+menu de aplicativos ou use `toca`. Os downloads publicados da versão 0.1.0 ainda contêm só o shell;
+para gerar o instalador conjunto desta cópia, siga o [guia de construção](docs/instalacao.md#-cliente-gráfico-toca).
 
 | 🪟 Windows | 🍎 macOS | 🐧 Linux |
 |:-:|:-:|:-:|
@@ -301,7 +305,7 @@ tatu_db/
 │   ├── toca_session.py    🧰 sessão, arquivos e resultados do cliente
 │   ├── demo.py            🌵 dados de exemplo
 │   └── errors.py          🚨 exceções
-├── tests/                 🧪 117 testes (unittest)
+├── tests/                 🧪 126 testes (unittest)
 ├── docs/                  📚 trilha de aprendizado, instalação, FAQ e ilustrações
 ├── examples/              🐍 exemplo de uso pelo Python
 ├── scripts/               🛠️ instaladores (install.sh, install.ps1), versão, notas e verificador das docs

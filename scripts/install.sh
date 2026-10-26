@@ -1,7 +1,7 @@
 #!/bin/sh
 # 🐾 Instalador do Tatu DB para Linux e macOS
 #
-# Cria o comando `tatu` sem precisar de sudo. Dois modos:
+# Cria os comandos `tatu` e `toca` sem precisar de sudo. Dois modos:
 #   • python   — se houver Python 3.10+, instala num ambiente virtual só do Tatu;
 #   • binario  — sem Python, baixa o executável pronto do último Release.
 # Por padrão o modo é escolhido sozinho.
@@ -26,6 +26,8 @@ TATU_HOME="${TATU_HOME:-$HOME/.local/share/tatu-db}"
 BIN_DIR="${TATU_BIN_DIR:-$HOME/.local/bin}"
 VENV="$TATU_HOME/venv"
 BINARY="$TATU_HOME/tatu"
+GUI_BINARY="$TATU_HOME/toca"
+GUI_TARGET=""
 
 # ─────────────────────────── aparência ───────────────────────────
 
@@ -59,7 +61,7 @@ usage() {
 
 # Apaga só o que é do Tatu (nunca a pasta inteira: TATU_HOME pode ter outras coisas).
 remove_installation() {
-    rm -rf "$VENV" "$BINARY"
+    rm -rf "$VENV" "$BINARY" "$GUI_BINARY"
     rmdir "$TATU_HOME" 2>/dev/null || true
 }
 
@@ -68,11 +70,13 @@ remove_installation() {
 uninstall() {
     step "Removendo o Tatu DB de $TATU_HOME"
     remove_installation
-    if [ -L "$BIN_DIR/tatu" ]; then
-        case "$(readlink "$BIN_DIR/tatu")" in
-            "$TATU_HOME"/*) rm -f "$BIN_DIR/tatu" ;;  # só se o link for nosso
-        esac
-    fi
+    for command in tatu toca; do
+        if [ -L "$BIN_DIR/$command" ]; then
+            case "$(readlink "$BIN_DIR/$command")" in
+                "$TATU_HOME"/*) rm -f "$BIN_DIR/$command" ;;  # só se o link for nosso
+            esac
+        fi
+    done
     ok "Tatu DB removido. Seus arquivos .tatu continuam onde estavam."
     exit 0
 }
@@ -118,6 +122,9 @@ install_with_python() {
     "$VENV/bin/python" -m pip install --quiet --disable-pip-version-check --upgrade "$SOURCE" ||
         die "A instalação falhou. Verifique sua conexão com a internet e tente de novo."
     TARGET="$VENV/bin/tatu"
+    if [ -x "$VENV/bin/toca" ]; then
+        GUI_TARGET="$VENV/bin/toca"
+    fi
 }
 
 # ─────────────────────────── modo binário ───────────────────────────
@@ -165,6 +172,12 @@ Instale o Python 3.10+ e rode este instalador de novo."
     mkdir -p "$TATU_HOME"
     cp "$TMP/$NAME/tatu" "$BINARY"
     chmod 0755 "$BINARY"
+    # Releases antigos trazem só o shell; o cliente passa a acompanhar os novos portáteis.
+    if [ -f "$TMP/$NAME/toca" ]; then
+        cp "$TMP/$NAME/toca" "$GUI_BINARY"
+        chmod 0755 "$GUI_BINARY"
+        GUI_TARGET="$GUI_BINARY"
+    fi
     rm -rf "$TMP"
     TARGET="$BINARY"
 }
@@ -197,6 +210,15 @@ install() {
 
     mkdir -p "$BIN_DIR"
     ln -sf "$TARGET" "$BIN_DIR/tatu"
+    if [ -n "$GUI_TARGET" ]; then
+        ln -sf "$GUI_TARGET" "$BIN_DIR/toca"
+        ok "Cliente gráfico Toca instalado em $BIN_DIR/toca"
+    elif [ -L "$BIN_DIR/toca" ]; then
+        # Ao voltar a uma versão antiga, não deixe um atalho nosso apontando para um arquivo removido.
+        case "$(readlink "$BIN_DIR/toca")" in
+            "$TATU_HOME"/*) rm -f "$BIN_DIR/toca" ;;
+        esac
+    fi
     VERSION="$("$BIN_DIR/tatu" --version)" || die "O comando tatu não funcionou depois de instalado."
     ok "$VERSION instalado em $BIN_DIR/tatu"
 

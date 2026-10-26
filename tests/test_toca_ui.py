@@ -7,7 +7,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tatu.errors import TatuError
-from tatu.toca import TocaApp, tk
+from tatu.result import Result
+from tatu.toca import TocaApp, _smoke_test, tk
+from tatu.toca_session import RunReport
 
 
 class TocaUiTest(unittest.TestCase):
@@ -25,7 +27,7 @@ class TocaUiTest(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
 
     def tearDown(self):
-        if hasattr(self, "app"):
+        if hasattr(self, "app") and not self.app._closed:
             if self.app.session.in_transaction:
                 self.app.session.rollback()
             self.app.session.dirty = False
@@ -51,6 +53,23 @@ class TocaUiTest(unittest.TestCase):
         self.assertEqual(self.app._displayed_rows, [("Bolinha",), ("Fuleco",)])
         self.assertEqual(len(self.app.result_tree.get_children()), 2)
         self.assertTrue(self.app.history_tree.get_children())
+
+    def test_verificacao_do_pacote_executa_sql_e_fecha_sem_dialogos(self):
+        # A janela de teste já terminou a consulta inicial; a verificação
+        # agenda outra consulta, como faz no executável instalado.
+        self.app._startup_job = self.root.after(10000, lambda: None)
+        with patch("tatu.toca.messagebox.askyesnocancel") as ask:
+            self.assertEqual(_smoke_test(self.app), 0)
+        ask.assert_not_called()
+        self.assertTrue(self.app._closed)
+        self.assertIsNone(self.app.session.path)
+
+    def test_verificacao_do_pacote_recusa_resultado_incorreto(self):
+        self.app._startup_job = self.root.after(10000, lambda: None)
+        wrong = RunReport(results=[Result(columns=["resposta"], rows=[(41,)])])
+        with patch.object(self.app.session, "run", return_value=wrong):
+            self.assertEqual(_smoke_test(self.app), 1)
+        self.assertTrue(self.app._closed)
 
     def test_execucao_respeita_selecao_do_editor(self):
         self.app.set_sql("SELECT 7; SELECT * FROM inexistente;")

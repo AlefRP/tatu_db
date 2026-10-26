@@ -3,7 +3,7 @@
     🐾 Instalador do Tatu DB para Windows.
 
 .DESCRIPTION
-    Cria o comando `tatu` sem precisar de administrador. Dois modos:
+    Cria os comandos `tatu` e `toca` sem precisar de administrador. Dois modos:
       - Python:  se houver Python 3.10+, instala num ambiente virtual só do Tatu;
       - Binario: sem Python, baixa o executável pronto do último Release.
     Por padrão o modo é escolhido sozinho.
@@ -54,10 +54,13 @@ if ($PSVersionTable.PSVersion.Major -lt 6 -and $runningFromThisFile -and -not $e
 $ScriptDir = if ($env:TATU_SCRIPT_DIR) { $env:TATU_SCRIPT_DIR } else { $PSScriptRoot }
 $RepoUrl = "https://github.com/AlefRP/tatu_db"
 $TatuHome = if ($env:TATU_HOME) { $env:TATU_HOME } else { Join-Path $env:LOCALAPPDATA "tatu-db" }
+$TatuHome = [IO.Path]::GetFullPath($TatuHome)
 $Venv = Join-Path $TatuHome "venv"
 $BinDir = Join-Path $TatuHome "bin"
 $Shim = Join-Path $BinDir "tatu.cmd"     # modo Python: "atalho" para o tatu.exe do ambiente virtual
 $Exe = Join-Path $BinDir "tatu.exe"      # modo Binario: o executável pronto
+$GuiShim = Join-Path $BinDir "toca.cmd"
+$GuiExe = Join-Path $BinDir "toca.exe"
 
 function Write-Step($Text) { Write-Host "==> " -ForegroundColor DarkYellow -NoNewline; Write-Host $Text }
 function Write-Ok($Text) { Write-Host "OK  " -ForegroundColor Green -NoNewline; Write-Host $Text }
@@ -93,11 +96,18 @@ function Set-UserPathEntries($Entries) {
 
 # Apaga só o que é do Tatu (nunca a pasta inteira: TATU_HOME pode ter outras coisas).
 function Remove-Installation {
-    foreach ($path in @($Venv, $Shim, $Exe)) {
-        if (Test-Path $path) { Remove-Item -Recurse -Force $path }
+    $prefix = $TatuHome.TrimEnd("\") + "\"
+    foreach ($path in @($Venv, $Shim, $Exe, $GuiShim, $GuiExe)) {
+        $resolved = [IO.Path]::GetFullPath($path)
+        if (-not $resolved.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+            Stop-WithError "O caminho $resolved fica fora da pasta do Tatu. Confira TATU_HOME."
+        }
+        if (Test-Path -LiteralPath $resolved) { Remove-Item -LiteralPath $resolved -Recurse -Force }
     }
     foreach ($dir in @($BinDir, $TatuHome)) {
-        if ((Test-Path $dir) -and -not (Get-ChildItem -Force $dir)) { Remove-Item -Force $dir }
+        if ((Test-Path -LiteralPath $dir) -and -not (Get-ChildItem -LiteralPath $dir -Force)) {
+            Remove-Item -LiteralPath $dir -Force
+        }
     }
 }
 
@@ -173,6 +183,9 @@ function Install-WithPython($PythonExe) {
     # Um tatu.cmd numa pasta só dele: assim o PATH não ganha o python.exe do ambiente virtual
     New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
     Set-Content -Path $Shim -Encoding ascii -Value "@echo off`r`n`"%~dp0..\venv\Scripts\tatu.exe`" %*"
+    if (Test-Path -LiteralPath (Join-Path $Venv "Scripts\toca.exe")) {
+        Set-Content -Path $GuiShim -Encoding ascii -Value "@echo off`r`n`"%~dp0..\venv\Scripts\toca.exe`" %*"
+    }
     return $Shim
 }
 
@@ -199,8 +212,15 @@ function Install-Binary {
         Remove-Installation
         New-Item -ItemType Directory -Force -Path $BinDir | Out-Null
         Copy-Item (Join-Path $tmp "$name\tatu.exe") $Exe -Force
+        # Releases antigos trazem só o shell. O mesmo script continua instalando essas versões.
+        $guiSource = Join-Path $tmp "$name\toca.exe"
+        if (Test-Path -LiteralPath $guiSource) { Copy-Item -LiteralPath $guiSource $GuiExe -Force }
     } finally {
-        Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
+        $tempRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd("\") + "\"
+        $resolvedTemp = [IO.Path]::GetFullPath($tmp)
+        if ($resolvedTemp.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase)) {
+            Remove-Item -LiteralPath $resolvedTemp -Recurse -Force -ErrorAction SilentlyContinue
+        }
     }
     return $Exe
 }
@@ -227,6 +247,9 @@ $command = if ($mode -eq "binario") { Install-Binary } else { Install-WithPython
 $version = & $command --version
 if ($LASTEXITCODE -ne 0) { Stop-WithError "O comando tatu não funcionou depois de instalado." }
 Write-Ok "$version instalado em $command"
+if ((Test-Path -LiteralPath $GuiShim) -or (Test-Path -LiteralPath $GuiExe)) {
+    Write-Ok "Cliente gráfico Toca instalado. Abra com: toca"
+}
 
 if ($NoPath) {
     Write-Host "`nPATH não alterado (-NoPath). Rode com:  $command"

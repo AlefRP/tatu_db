@@ -11,6 +11,11 @@ e acompanhar resultados. Ele usa o motor Python deste repositório e o formato `
 
 ## 🚀 Abrir
 
+Os instaladores conjuntos incluem o motor e o Toca, com Python e Tcl/Tk incorporados.
+No Windows/Linux, abra **Toca** pelo menu de aplicativos; no macOS, abra **Aplicativos → Toca**.
+Também pode executar `toca [banco.tatu]`. Veja como instalar ou gerar os pacotes no
+[guia de instalação](instalacao.md#-cliente-gráfico-toca).
+
 Na pasta do projeto, com Python 3.10 ou posterior:
 
 ```bash
@@ -39,6 +44,11 @@ A interface usa Tkinter, da biblioteca padrão. Confira se seu Python tem suport
 O cliente começa com um laboratório em memória: espécies de tatu, tatus e avistamentos.
 Esses dados são didáticos. Use os exemplos para experimentar consultas e `EXPLAIN`.
 Os temas claro e escuro mudam a aparência da bancada pelo menu **Exibir**.
+
+Em telas de alta resolução, a janela respeita a escala de fontes do sistema. Maximizar
+mantém as colunas em larguras de leitura e amplia a área de resultados; arraste o divisor
+para dar mais espaço ao editor quando quiser. No Windows, reabra o Toca depois de mudar
+a escala da tela ou passar para um monitor com escala diferente.
 
 ## ⌨️ Escrever e executar SQL
 
@@ -105,6 +115,7 @@ Para entender esse mecanismo, leia [Transações e o diário](07-transacoes.md).
 
 - [`toca.py`](../tatu/toca.py): widgets, editor, cores, menus e atalhos em Tkinter.
 - [`toca_session.py`](../tatu/toca_session.py): sessão, execução, arquivos e resultados usados pela interface.
+- [`toca_display.py`](../tatu/toca_display.py): medidas e escala de alta resolução.
 - [`database.py`](../tatu/database.py): a conexão e as transações do motor.
 
 O SQL disponível é o da [referência do Tatu DB](08-referencia-sql.md).

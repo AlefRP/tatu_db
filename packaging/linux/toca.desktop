@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Toca
+GenericName=Cliente Tatu DB
+Comment=Escreva SQL e explore bancos Tatu DB
+Exec=toca %f
+Icon=toca
+Terminal=false
+Categories=Development;Database;
+Keywords=SQL;Tatu;database;banco;

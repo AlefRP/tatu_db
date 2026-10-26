@@ -1,7 +1,9 @@
 ﻿; 🪟 Instalador do Tatu DB para Windows (Inno Setup 6.3+)
 ;
-; Primeiro gere o executável, depois compile este script:
-;   python packaging\build_binary.py
+; Gere o banco, o cliente e este instalador em um comando:
+;   python packaging\build_binary.py --installer
+; Ou gere ambos e compile este script manualmente:
+;   python packaging\build_binary.py --all
 ;   iscc /DAppVersion=0.1.0 packaging\windows\tatu.iss
 ;
 ; Resultado: dist\release\tatu-windows-x86_64-setup.exe (sem a versão no nome: assim o link
@@ -17,7 +19,7 @@
 AppId={{8F1C5E2A-7B3D-4C9E-A1F0-5D2B6E8C4A17}
 AppName=Tatu DB
 AppVersion={#AppVersion}
-AppVerName=Tatu DB {#AppVersion}
+AppVerName=Tatu DB e Toca {#AppVersion}
 AppPublisher=AlefRP
 AppPublisherURL=https://github.com/AlefRP/tatu_db
 AppSupportURL=https://github.com/AlefRP/tatu_db/issues
@@ -28,9 +30,10 @@ DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ChangesEnvironment=yes
+ChangesAssociations=yes
 LicenseFile=..\..\LICENSE
 SetupIconFile=..\icons\tatu.ico
-UninstallDisplayIcon={app}\tatu.ico
+UninstallDisplayIcon={app}\toca.ico
 UninstallDisplayName=Tatu DB {#AppVersion}
 OutputDir=..\..\dist\release
 OutputBaseFilename=tatu-windows-x86_64-setup
@@ -45,22 +48,32 @@ Name: "brazilianportuguese"; MessagesFile: "compiler:Languages\BrazilianPortugue
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "addtopath"; Description: "Adicionar o comando tatu ao PATH (recomendado)"; GroupDescription: "Opções:"
-Name: "desktopicon"; Description: "Criar atalho na área de trabalho"; GroupDescription: "Opções:"; Flags: unchecked
+Name: "addtopath"; Description: "Adicionar os comandos tatu e toca ao PATH (recomendado)"; GroupDescription: "Opções:"
+Name: "desktopicon"; Description: "Criar atalho do Toca na área de trabalho"; GroupDescription: "Opções:"; Flags: unchecked
+Name: "fileassoc"; Description: "Permitir abrir bancos .tatu com o Toca"; GroupDescription: "Opções:"; Flags: unchecked
 
 [Files]
 Source: "..\..\build\pyinstaller\dist\tatu.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\build\pyinstaller\dist\toca.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\icons\tatu.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\icons\toca.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 
 [Icons]
+Name: "{group}\Toca - Cliente do Tatu DB"; Filename: "{app}\toca.exe"; IconFilename: "{app}\toca.ico"; WorkingDir: "{userdocs}"; Comment: "Editor SQL e navegador de bancos Tatu DB"
 Name: "{group}\Tatu DB"; Filename: "{app}\tatu.exe"; IconFilename: "{app}\tatu.ico"; WorkingDir: "{userdocs}"; Comment: "Shell interativo do Tatu DB"
 Name: "{group}\Desinstalar o Tatu DB"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\Tatu DB"; Filename: "{app}\tatu.exe"; IconFilename: "{app}\tatu.ico"; WorkingDir: "{userdocs}"; Tasks: desktopicon
+Name: "{autodesktop}\Toca"; Filename: "{app}\toca.exe"; IconFilename: "{app}\toca.ico"; WorkingDir: "{userdocs}"; Tasks: desktopicon
+
+[Registry]
+Root: HKA; Subkey: "Software\Classes\.tatu\OpenWithProgids"; ValueType: string; ValueName: "TatuDB.Database"; ValueData: ""; Flags: uninsdeletevalue; Tasks: fileassoc
+Root: HKA; Subkey: "Software\Classes\TatuDB.Database"; ValueType: string; ValueData: "Banco Tatu DB"; Flags: uninsdeletekey; Tasks: fileassoc
+Root: HKA; Subkey: "Software\Classes\TatuDB.Database\DefaultIcon"; ValueType: string; ValueData: "{app}\toca.ico"; Tasks: fileassoc
+Root: HKA; Subkey: "Software\Classes\TatuDB.Database\shell\open\command"; ValueType: string; ValueData: """{app}\toca.exe"" ""%1"""; Tasks: fileassoc
 
 [Run]
-Filename: "{app}\tatu.exe"; Description: "Abrir o Tatu DB agora"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\toca.exe"; Description: "Abrir o Toca agora"; WorkingDir: "{userdocs}"; Flags: nowait postinstall skipifsilent
 
 [Code]
 { O PATH fica em HKCU (instalação só para você) ou em HKLM (para todos). }

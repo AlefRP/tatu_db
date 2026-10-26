@@ -122,12 +122,23 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ env.TAG }}
+      - name: Tela virtual para conferir o cliente gráfico (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth
       - name: install.sh baixando o executável do Release
         if: runner.os != 'Windows'
         run: |
           sh scripts/install.sh --binario
           ~/.local/bin/tatu --version | grep -F "$VERSAO"
           ~/.local/bin/tatu -c "SELECT 'release ok' AS status"
+          test -x ~/.local/bin/toca
+          if [ "$(uname -s)" = Linux ]; then
+            xvfb-run -a ~/.local/bin/toca --smoke-test
+          else
+            ~/.local/bin/toca --smoke-test
+          fi
           sh scripts/install.sh --uninstall
       - name: install.ps1 baixando o executável do Release
         if: runner.os == 'Windows'
@@ -138,6 +149,9 @@ jobs:
           $version = & $tatu --version
           if ($version -notmatch [regex]::Escape($env:VERSAO)) { throw "versão errada: $version" }
           & $tatu -c "SELECT 'release ok' AS status"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $gui = Start-Process "$env:LOCALAPPDATA\tatu-db\bin\toca.exe" -WindowStyle Hidden -Wait -PassThru -ArgumentList "--smoke-test"
+          if ($gui.ExitCode -ne 0) { throw "o Toca publicado falhou: $($gui.ExitCode)" }
           ./scripts/install.ps1 -Uninstall
 
   pypi:

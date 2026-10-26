@@ -68,7 +68,16 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           allow-prereleases: true
+      - name: Tela virtual para os testes de interface (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk xvfb xauth
+      - name: Testes com interface gráfica (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python -m unittest discover -s tests -v
       - name: Testes
+        if: runner.os != 'Linux'
         run: python -m unittest discover -s tests -v
       - name: Exemplo da API
         run: python examples/primeiros_passos.py
@@ -96,8 +105,10 @@ jobs:
         run: |
           sh scripts/install.sh
           ~/.local/bin/tatu -c "SELECT 'instalado!' AS status"
+          test -x ~/.local/bin/toca
           sh scripts/install.sh --uninstall
           test ! -e ~/.local/bin/tatu
+          test ! -e ~/.local/bin/toca
 
       - name: install.sh (direto do GitHub, como no curl | sh)
         if: runner.os != 'Windows' && github.event_name == 'push'
@@ -113,6 +124,7 @@ jobs:
           ./scripts/install.ps1
           & "$env:LOCALAPPDATA\tatu-db\bin\tatu.cmd" -c "SELECT 'instalado!' AS status"
           if ($LASTEXITCODE -ne 0) { exit 1 }
+          if (-not (Test-Path "$env:LOCALAPPDATA\tatu-db\bin\toca.cmd")) { throw "o instalador não criou o comando toca" }
           ./scripts/install.ps1 -Uninstall
           if (Test-Path "$env:LOCALAPPDATA\tatu-db") { throw "a desinstalação deixou arquivos para trás" }
 

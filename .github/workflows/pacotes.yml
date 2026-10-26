@@ -54,6 +54,7 @@ jobs:
           python -m venv /tmp/limpo
           /tmp/limpo/bin/pip install dist/*.whl
           /tmp/limpo/bin/tatu -c "SELECT 'wheel ok' AS status"
+          test -x /tmp/limpo/bin/toca
       - uses: actions/upload-artifact@v4
         with:
           name: tatu-python
@@ -91,8 +92,19 @@ jobs:
           python-version: "3.13"
       - name: Instala o PyInstaller
         run: python -m pip install pyinstaller
-      - name: Gera o executável (e testa)
-        run: python packaging/build_binary.py
+      - name: Tela virtual e bibliotecas do Tk (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk xvfb xauth desktop-file-utils
+      - name: Confere o suporte a Tkinter
+        run: python -c "import tkinter; print('Tcl/Tk', tkinter.TkVersion)"
+      - name: Gera o banco e o cliente gráfico (Linux, com tela virtual)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python packaging/build_binary.py --all
+      - name: Gera o banco e o cliente gráfico
+        if: runner.os != 'Linux'
+        run: python packaging/build_binary.py --all
 
       - name: Pacote .deb (e testa instalando)
         if: runner.os == 'Linux'
@@ -100,15 +112,19 @@ jobs:
           sh packaging/linux/build_deb.sh
           sudo apt-get install -y ./dist/release/*.deb
           tatu -c "SELECT 'deb ok' AS status"
+          desktop-file-validate /usr/share/applications/toca.desktop
+          xvfb-run -a toca --smoke-test
           sudo apt-get remove -y tatu-db
+          test ! -e /usr/bin/toca
 
       - name: Pacote .rpm (e testa instalando num Fedora)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get install -y rpm
           sh packaging/linux/build_rpm.sh
-          docker run --rm -v "$PWD/dist/release:/pacotes:ro" fedora:41 \
-            sh -c 'rpm -i /pacotes/*.rpm && tatu -c "SELECT 6 * 7 AS rpm_ok" && rpm -e tatu-db'
+          docker run --rm -v "$PWD/dist/release:/pacotes:ro" fedora:latest \
+            sh -c 'dnf install -y /pacotes/*.rpm && tatu -c "SELECT 6 * 7 AS rpm_ok" &&
+              test -x /usr/bin/toca && test -f /usr/share/applications/toca.desktop && rpm -e tatu-db'
 
       - name: Instalador .pkg (e testa instalando)
         if: runner.os == 'macOS'
@@ -116,7 +132,10 @@ jobs:
           sh packaging/macos/build_pkg.sh
           sudo installer -pkg dist/release/*.pkg -target /
           /usr/local/bin/tatu -c "SELECT 'pkg ok' AS status"
-          sudo rm /usr/local/bin/tatu
+          /usr/local/bin/toca --smoke-test
+          /Applications/Toca.app/Contents/MacOS/toca --smoke-test
+          sudo rm /usr/local/bin/tatu /usr/local/bin/toca
+          sudo rm -rf /Applications/Toca.app
           sudo pkgutil --forget io.github.alefrp.tatu-db
 
       - name: Instalador setup.exe (e testa instalando)
@@ -128,16 +147,23 @@ jobs:
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Qp "/DAppVersion=$version" packaging\windows\tatu.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
           $setup = "dist\release\tatu-windows-x86_64-setup.exe"
-          Start-Process $setup -Wait -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/TASKS=addtopath"
+          $process = Start-Process $setup -WindowStyle Hidden -Wait -PassThru -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/TASKS=addtopath"
+          if ($process.ExitCode -ne 0) { throw "falha ao instalar: $($process.ExitCode)" }
           $installed = "$env:LOCALAPPDATA\Programs\Tatu DB"
           & "$installed\tatu.exe" -c "SELECT 'setup ok' AS status"
           if ($LASTEXITCODE -ne 0) { exit 1 }
+          $gui = Start-Process "$installed\toca.exe" -WindowStyle Hidden -Wait -PassThru -ArgumentList "--smoke-test"
+          if ($gui.ExitCode -ne 0) { throw "o Toca instalado falhou: $($gui.ExitCode)" }
           $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
           if (-not ($userPath -split ";" -contains $installed)) { throw "o instalador não colocou o tatu no PATH" }
-          Start-Process "$installed\unins000.exe" -Wait -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES"
+          Start-Process "$installed\unins000.exe" -WindowStyle Hidden -Wait -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES"
           # o desinstalador se copia para a pasta temporária e continua de lá: espera ele terminar
-          foreach ($i in 1..30) { if (-not (Test-Path "$installed\tatu.exe")) { break }; Start-Sleep -Seconds 1 }
+          foreach ($i in 1..30) {
+            if (-not (Test-Path "$installed\tatu.exe") -and -not (Test-Path "$installed\toca.exe")) { break }
+            Start-Sleep -Seconds 1
+          }
           if (Test-Path "$installed\tatu.exe") { throw "a desinstalação deixou o tatu.exe para trás" }
+          if (Test-Path "$installed\toca.exe") { throw "a desinstalação deixou o toca.exe para trás" }
 
       - name: Lista os pacotes
         shell: bash

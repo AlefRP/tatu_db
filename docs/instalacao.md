@@ -11,7 +11,7 @@ executáveis prontos para Windows, macOS e Linux. Escolha o caminho que combina 
 | ⚡ [Script de uma linha](#-script-de-uma-linha) | opcional | ter o comando `tatu` em um minuto, pelo terminal |
 | 🎒 [Executável portátil](#-executável-portátil) `.zip` `.tar.gz` | ❌ | usar sem instalar nada (até de um pendrive) |
 | 🧑‍💻 [Código-fonte](#-do-código-fonte-recomendado-para-estudar) | ✅ 3.10+ | **estudar o código** (o melhor para a trilha de aprendizado) |
-| 🦔 [Cliente gráfico Toca](#-cliente-gráfico-toca) | ✅ 3.10+ com Tkinter | editar SQL e explorar os bancos em uma janela |
+| 🦔 [Cliente gráfico Toca](#-cliente-gráfico-toca) | opcional | editar SQL e explorar os bancos em uma janela |
 | 🐍 [pip / pipx](#-pip-e-pipx) | ✅ 3.10+ | quem já vive no ecossistema Python |
 
 Todas as versões, com notas e arquivos, ficam na página de **[Releases](https://github.com/AlefRP/tatu_db/releases)**.
@@ -22,6 +22,9 @@ Todas as versões, com notas e arquivos, ficam na página de **[Releases](https:
 
 Os links abaixo sempre baixam a **versão mais recente**. O instalador já traz o Python dentro — não
 precisa ter nada instalado.
+
+Os pacotes gerados pela construção atual incluem o **banco Tatu** e o **cliente gráfico Toca**.
+Em versões anteriores, confira as notas do Release: os pacotes da versão 0.1.0 traziam só o shell.
 
 | Sistema | Instalador | Portátil |
 |---|---|---|
@@ -35,10 +38,16 @@ precisa ter nada instalado.
 **Como instalar cada um:**
 
 - **Windows** — dê dois cliques no `setup.exe`. O assistente instala na sua pasta de usuário (sem pedir
-  administrador), cria o atalho **Tatu DB** no menu Iniciar e, se você deixar marcado, põe o `tatu` no PATH.
-- **macOS** — dê dois cliques no `.pkg`. O comando fica em `/usr/local/bin/tatu`.
+  administrador), cria os atalhos **Toca - Cliente do Tatu DB** e **Tatu DB** no menu Iniciar e,
+  se você deixar marcado, põe `tatu` e `toca` no PATH. O atalho na área de trabalho e a abertura
+  de arquivos `.tatu` com o Toca são opcionais.
+- **macOS** — dê dois cliques no `.pkg`. Os comandos ficam em `/usr/local/bin/tatu` e
+  `/usr/local/bin/toca`; a interface também fica em **Aplicativos → Toca**.
 - **Debian/Ubuntu** — `sudo apt install ./tatu-linux-x86_64.deb`
 - **Fedora/RHEL** — `sudo dnf install ./tatu-linux-x86_64.rpm`
+
+No Linux, o Toca aparece no menu de aplicativos; os pacotes instalam suas bibliotecas gráficas.
+Os executáveis Linux atuais requerem glibc 2.35 ou posterior (por exemplo, Ubuntu 22.04+).
 
 > [!WARNING]
 > Os instaladores **não são assinados digitalmente** (assinatura custa caro para um projeto educacional).
@@ -58,7 +67,8 @@ O script escolhe sozinho o melhor jeito de instalar:
 - **tem Python 3.10+?** Cria um ambiente virtual só para o Tatu (não mexe no Python do sistema) e instala o pacote;
 - **não tem?** Baixa o **executável pronto** do último Release.
 
-Nos dois casos, cria o comando `tatu` sem pedir administrador.
+Nos dois casos, cria os comandos `tatu` e `toca` sem pedir administrador quando a versão escolhida
+inclui o cliente. No modo Python, abrir o Toca requer o suporte a Tkinter do Python instalado.
 
 ### 🪟 Windows (PowerShell)
 
@@ -94,7 +104,7 @@ ou `.\scripts\install.ps1`.
 
 ## 🎒 Executável portátil
 
-Um único arquivo `tatu` (ou `tatu.exe`), sem instalação — veja os links `.zip`/`.tar.gz` na
+Os executáveis `tatu` e `toca` (ou `tatu.exe` e `toca.exe`), sem instalação — veja os links `.zip`/`.tar.gz` na
 [tabela acima](#-instaladores).
 
 ```bash
@@ -108,7 +118,8 @@ xattr -d com.apple.quarantine tatu-macos-arm64/tatu
 ./tatu-macos-arm64/tatu
 ```
 
-No Windows, descompacte o `.zip` e dê dois cliques em `tatu.exe` (ou rode-o no terminal).
+No Windows, descompacte o `.zip` e abra `toca.exe` para a interface ou `tatu.exe` para o shell.
+No macOS, o portátil também inclui o aplicativo `toca.app`.
 
 > [!NOTE]
 > O executável é um "pacote" com o Python dentro: na primeira execução ele leva um segundinho a mais
@@ -127,6 +138,9 @@ para a sua cópia (e refletindo suas mudanças na hora)? Rode `pip install -e .`
 
 ## 🦔 Cliente gráfico Toca
 
+Com os pacotes conjuntos, use o atalho **Toca** ou execute `toca [banco.tatu]`.
+O instalador e o portátil incluem Python e Tcl/Tk; não é preciso instalá-los separadamente.
+
 Na pasta desta versão do código-fonte:
 
 ```bash
@@ -143,13 +157,28 @@ teste deve abrir, conforme a [documentação oficial do Python](https://docs.pyt
 Se o módulo estiver ausente, instale o suporte a Tk do seu Python pelo instalador ou pelo gerenciador
 de pacotes do sistema. O shell `python -m tatu` continua disponível sem Tkinter.
 
-Para gerar um executável gráfico desta cópia, com PyInstaller instalado:
+Para gerar o banco, o cliente e os portáteis conjuntos desta cópia, com PyInstaller instalado:
 
 ```bash
-python packaging/build_binary.py --gui
+python -m pip install pyinstaller
+python packaging/build_binary.py --all
 ```
 
-Os instaladores do shell e a construção padrão continuam separados do cliente gráfico.
+No Windows, instale também o **Inno Setup 6.3+** e gere o instalador conjunto com um comando:
+
+```powershell
+python packaging/build_binary.py --installer
+# se o compilador estiver em outro lugar:
+python packaging/build_binary.py --installer --iscc "C:\ferramentas\Inno Setup 6\ISCC.exe"
+```
+
+O resultado fica em `dist/release/tatu-windows-x86_64-setup.exe`.
+No Linux, rode `sh packaging/linux/build_deb.sh` ou `sh packaging/linux/build_rpm.sh` depois de `--all`;
+no macOS, use `sh packaging/macos/build_pkg.sh`. Cada pacote deve ser gerado no próprio sistema.
+O build verifica SQL e widgets do cliente antes de empacotar; no Linux sem tela, use
+`xvfb-run -a python packaging/build_binary.py --all`.
+
+Use `--gui` para gerar somente o Toca. Sem opções, o script ainda gera somente o shell.
 Veja o [guia do Toca](toca.md) para os comandos, atalhos e persistência.
 
 ## 🐍 pip e pipx
@@ -190,7 +219,7 @@ Get-FileHash .\tatu-windows-x86_64-setup.exe      # Windows
 | Instalou com… | Para remover |
 |---|---|
 | setup.exe | **Configurações → Aplicativos → Tatu DB → Desinstalar** |
-| .pkg | `sudo rm /usr/local/bin/tatu && sudo pkgutil --forget io.github.alefrp.tatu-db` |
+| .pkg | remova `/usr/local/bin/tatu`, `/usr/local/bin/toca` e `/Applications/Toca.app`; depois rode `sudo pkgutil --forget io.github.alefrp.tatu-db` |
 | .deb | `sudo apt remove tatu-db` |
 | .rpm | `sudo dnf remove tatu-db` |
 | script (Windows) | `& ([scriptblock]::Create((irm https://raw.githubusercontent.com/AlefRP/tatu_db/main/scripts/install.ps1))) -Uninstall` |
