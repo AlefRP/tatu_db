@@ -5,6 +5,9 @@
 Tudo o que o Tatu DB entende, num lugar só. Palavras-chave e nomes **não** diferenciam maiúsculas
 (`select`, `SELECT` e `SeLeCt` são iguais; `Tatus` e `tatus` também). Comandos terminam com `;`.
 
+Identificadores entre aspas duplas permitem espaços e palavras reservadas, como
+`"minha tabela"`. Uma aspa no nome é escapada dobrando-a: `"tatu""bola"`.
+
 ## 🧱 Tipos
 
 | Tipo | Apelidos aceitos | Valores | Exemplo |
@@ -130,6 +133,16 @@ Fora de uma transação, cada comando é gravado sozinho (*autocommit*).
 python -m tatu [arquivo.tatu] [-c "SQL"]     # sem arquivo: banco em memória
 python -m tatu arquivo.tatu < script.sql      # executa um script (com comandos de ponto, inclusive)
 ```
+
+## 🦔 Cliente gráfico Toca
+
+O Toca executa o mesmo SQL desta referência e usa o mesmo formato de arquivo `.tatu`.
+Abra com `python -m tatu.toca [arquivo.tatu]`, `python -m tatu --gui [arquivo.tatu]` ou,
+depois da instalação Python, `toca [arquivo.tatu]`.
+
+**Ctrl+Enter** e **F5** executam a seleção do editor, ou o texto inteiro quando não há seleção.
+Os controles de transação correspondem a `BEGIN`, `COMMIT` e `ROLLBACK`.
+Para atalhos, arquivos SQL e exportação CSV, veja o [guia do cliente](toca.md).
 
 ## 🐍 API Python
 

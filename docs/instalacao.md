@@ -11,6 +11,7 @@ executáveis prontos para Windows, macOS e Linux. Escolha o caminho que combina 
 | ⚡ [Script de uma linha](#-script-de-uma-linha) | opcional | ter o comando `tatu` em um minuto, pelo terminal |
 | 🎒 [Executável portátil](#-executável-portátil) `.zip` `.tar.gz` | ❌ | usar sem instalar nada (até de um pendrive) |
 | 🧑‍💻 [Código-fonte](#-do-código-fonte-recomendado-para-estudar) | ✅ 3.10+ | **estudar o código** (o melhor para a trilha de aprendizado) |
+| 🦔 [Cliente gráfico Toca](#-cliente-gráfico-toca) | ✅ 3.10+ com Tkinter | editar SQL e explorar os bancos em uma janela |
 | 🐍 [pip / pipx](#-pip-e-pipx) | ✅ 3.10+ | quem já vive no ecossistema Python |
 
 Todas as versões, com notas e arquivos, ficam na página de **[Releases](https://github.com/AlefRP/tatu_db/releases)**.
@@ -124,6 +125,33 @@ python -m tatu          # pronto! (no macOS/Linux talvez seja python3)
 Nada para instalar: o código que roda é o mesmo que você está lendo. Quer o comando `tatu` apontando
 para a sua cópia (e refletindo suas mudanças na hora)? Rode `pip install -e .` dentro da pasta.
 
+## 🦔 Cliente gráfico Toca
+
+Na pasta desta versão do código-fonte:
+
+```bash
+python -m tatu.toca
+python -m tatu.toca zoo.tatu
+```
+
+O primeiro comando abre uma demonstração em memória. O segundo abre um banco `.tatu` no computador.
+Também pode usar `python -m tatu --gui` ou, após `pip install -e .`, o comando `toca`.
+
+O cliente usa **Tkinter**, da biblioteca padrão, sem pacotes adicionais de `pip`. Algumas instalações
+de Python não incluem o suporte opcional a Tcl/Tk. Confira com `python -m tkinter`: uma janela de
+teste deve abrir, conforme a [documentação oficial do Python](https://docs.python.org/3/library/tkinter.html).
+Se o módulo estiver ausente, instale o suporte a Tk do seu Python pelo instalador ou pelo gerenciador
+de pacotes do sistema. O shell `python -m tatu` continua disponível sem Tkinter.
+
+Para gerar um executável gráfico desta cópia, com PyInstaller instalado:
+
+```bash
+python packaging/build_binary.py --gui
+```
+
+Os instaladores do shell e a construção padrão continuam separados do cliente gráfico.
+Veja o [guia do Toca](toca.md) para os comandos, atalhos e persistência.
+
 ## 🐍 pip e pipx
 
 ```bash
@@ -181,6 +209,7 @@ Nenhum desinstalador apaga seus arquivos `.tatu`.
 | `tatu: command not found` / `'tatu' não é reconhecido` | abra um **terminal novo** (o PATH só vale para terminais abertos depois da instalação); no macOS/Linux, confira se `~/.local/bin` está no PATH |
 | `Não há executável pronto para …` | sua combinação de sistema e processador ainda não tem executável: instale o Python 3.10+ e rode o script de novo |
 | bordas da tabela viram `?` ou letras esquisitas no Windows | use o **Windows Terminal** (vem no Windows 11) ou rode `chcp 65001` antes |
+| `No module named tkinter` / `_tkinter` ao abrir o Toca | instale o suporte a Tcl/Tk do seu Python e confira com `python -m tkinter`; o shell não exige esse módulo |
 | o antivírus reclamou do `tatu.exe` | falso positivo comum em executáveis feitos com PyInstaller; confira o SHA256 ou use o script/código-fonte |
 | `irm : ... não pôde ser carregado` (política de execução) | rode `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` e tente de novo |
 

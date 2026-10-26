@@ -13,7 +13,7 @@ aquecimento ao "agora eu entendo o PostgreSQL". Cada um diz por onde começar.
 
 > [!TIP]
 > Antes de mudar qualquer coisa, rode `python -m unittest discover -s tests`. Depois de mudar,
-> **escreva um teste novo** para o seu recurso e rode tudo de novo. Os 88 testes existentes são sua rede de segurança.
+> **escreva um teste novo** para o seu recurso e rode tudo de novo. Os 117 testes existentes são sua rede de segurança.
 
 ---
 

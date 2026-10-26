@@ -18,6 +18,8 @@ O executável solto fica em ``build/pyinstaller/dist/`` — é dele que os scrip
 de .deb, .rpm, .pkg e do instalador do Windows partem.
 """
 
+import argparse
+import os
 import platform
 import shutil
 import subprocess
@@ -41,20 +43,23 @@ def platform_name() -> str:
     return f"{system}-{machine}"
 
 
-def build() -> Path:
-    exe_name = "tatu.exe" if sys.platform == "win32" else "tatu"
+def build(gui: bool = False) -> Path:
+    name = "toca" if gui else "tatu"
+    exe_name = name + ".exe" if sys.platform == "win32" else name
     args = [
         sys.executable, "-m", "PyInstaller",
-        "--onefile", "--console", "--clean", "--noconfirm",
-        "--name", "tatu",
+        "--onefile", "--windowed" if gui else "--console", "--clean", "--noconfirm",
+        "--name", name,
         "--paths", str(ROOT),
         "--distpath", str(BUILD / "dist"),
         "--workpath", str(BUILD / "work"),
         "--specpath", str(BUILD),
     ]
+    if gui:
+        args += ["--add-data", f"{ROOT / 'tatu' / 'assets' / 'toca.png'}{os.pathsep}tatu/assets"]
     if sys.platform == "win32":
-        args += ["--icon", str(ROOT / "packaging" / "icons" / "tatu.ico")]
-    args.append(str(ROOT / "packaging" / "pyinstaller" / "tatu_entry.py"))
+        args += ["--icon", str(ROOT / "packaging" / "icons" / ("toca.ico" if gui else "tatu.ico"))]
+    args.append(str(ROOT / "packaging" / "pyinstaller" / ("toca_entry.py" if gui else "tatu_entry.py")))
     print("→", " ".join(args), flush=True)
     subprocess.run(args, check=True)
     return BUILD / "dist" / exe_name
@@ -70,9 +75,9 @@ def smoke_test(exe: Path) -> None:
     print(f"✔ {exe.name} funciona: {version.stdout.strip()}", flush=True)
 
 
-def archive(exe: Path) -> Path:
+def archive(exe: Path, gui: bool = False) -> Path:
     RELEASE.mkdir(parents=True, exist_ok=True)
-    base = f"tatu-{platform_name()}"
+    base = f"{'toca' if gui else 'tatu'}-{platform_name()}"
     extras = [ROOT / "README.md", ROOT / "LICENSE"]
     if sys.platform == "win32":
         target = RELEASE / f"{base}.zip"
@@ -89,6 +94,9 @@ def archive(exe: Path) -> Path:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Empacota o shell Tatu ou o cliente gráfico Toca.")
+    parser.add_argument("--gui", action="store_true", help="gera o executável gráfico Toca")
+    args = parser.parse_args()
     try:
         sys.stdout.reconfigure(errors="replace")  # consoles sem UTF-8 não quebram com o ✔
     except (AttributeError, ValueError):
@@ -96,9 +104,10 @@ def main() -> None:
     if shutil.which("pyinstaller") is None and subprocess.run(
             [sys.executable, "-m", "PyInstaller", "--version"], capture_output=True).returncode != 0:
         sys.exit("Instale o PyInstaller antes: pip install pyinstaller")
-    exe = build()
-    smoke_test(exe)
-    archive(exe)
+    exe = build(gui=args.gui)
+    if not args.gui:
+        smoke_test(exe)
+    archive(exe, gui=args.gui)
 
 
 if __name__ == "__main__":

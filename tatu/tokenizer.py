@@ -99,11 +99,22 @@ def tokenize(sql: str) -> list[Token]:
 
         # 5) identificadores entre aspas duplas: "Nome Com Espaço"
         if ch == '"':
-            end = sql.find('"', i + 1)
-            if end == -1:
-                raise TatuSyntaxError("Identificador sem aspa de fechamento", sql, i)
-            tokens.append(Token("IDENT", sql[i + 1:end], i))
-            i = end + 1
+            start = i
+            i += 1
+            chars = []
+            while True:
+                if i >= n:
+                    raise TatuSyntaxError("Identificador sem aspa de fechamento", sql, start)
+                if sql[i] == '"':
+                    if i + 1 < n and sql[i + 1] == '"':
+                        chars.append('"')
+                        i += 2
+                        continue
+                    i += 1
+                    break
+                chars.append(sql[i])
+                i += 1
+            tokens.append(Token("IDENT", "".join(chars), start))
             continue
 
         # 6) palavras: ou são palavras-chave (SELECT) ou nomes (tatus)

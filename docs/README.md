@@ -27,7 +27,7 @@ A ideia é ler o capítulo com o código aberto ao lado.
 | 🏋️ | [9. Exercícios](09-exercicios.md) | todos! | 🐾 a 🐾🐾🐾 |
 
 E também: 📦 [Instalação](instalacao.md) (Windows, macOS e Linux) · ❓ [Perguntas frequentes](faq.md) ·
-🤝 [Como contribuir](../CONTRIBUTING.md)
+🦔 [Toca: cliente gráfico](toca.md) · 🤝 [Como contribuir](../CONTRIBUTING.md)
 
 ## 🎒 Antes de começar
 
@@ -35,6 +35,8 @@ E também: 📦 [Instalação](instalacao.md) (Windows, macOS e Linux) · ❓ [P
 - Os capítulos 4 e 5 usam **geradores** (`yield`) e **closures** (funções que guardam variáveis). Se forem novidade,
   não tem problema: o texto explica quando aparecem.
 - Deixe um shell aberto: `python -m tatu`, depois `.demo`. Sempre que um capítulo mostrar um comando, rode-o!
+- Se preferir uma janela, abra `python -m tatu.toca`: o Toca já começa com o banco de exemplo,
+  e **Ctrl+Enter** executa a consulta no editor.
 
 > [!TIP]
 > O comando mais útil desta trilha é o **`EXPLAIN`**. Ele mostra o plano que o Tatu montou para a sua consulta.

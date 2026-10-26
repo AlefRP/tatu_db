@@ -6,6 +6,16 @@ O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e 
 
 ## [Não lançado]
 
+### 🦔 Toca
+
+- Cliente gráfico próprio em Python/Tkinter, com ícone, temas claro e escuro, editor SQL com cores,
+  navegador de tabelas, grade de resultados, estrutura e histórico de consultas.
+- Abrir, criar e salvar bancos `.tatu`, abrir/salvar consultas SQL, exportar CSV e controlar transações.
+- Laboratório de exemplo em memória e confirmação ao trocar de banco ou fechar com trabalho pendente.
+- Entradas `python -m tatu.toca`, `python -m tatu --gui` e `toca` para a instalação Python.
+- Construção opcional do executável gráfico com `python packaging/build_binary.py --gui`.
+- Identificadores entre aspas duplas aceitam aspas escapadas, preservando nomes vindos de arquivos `.tatu`.
+
 ## [0.1.0] - 2026-10-25
 
 A primeira versão do tatu saiu da toca! 🐾
@@ -47,7 +57,7 @@ A primeira versão do tatu saiu da toca! 🐾
 
 ### ⚙️ Projeto
 
-- 88 testes; CI em Windows, macOS e Linux com Python 3.10 a 3.14.
+- 117 testes; CI em Windows, macOS e Linux com Python 3.10 a 3.14.
 - Lançamento com um clique no GitHub Actions (workflow "Nova versão"): sobe a versão, fecha o
   CHANGELOG, cria a tag, publica o Release e instala o que foi publicado em cada sistema para conferir.
 - Configuração para o Claude Code: `CLAUDE.md`, skills, agentes, hook de testes e workflow `@claude`.

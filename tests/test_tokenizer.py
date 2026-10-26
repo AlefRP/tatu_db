@@ -37,6 +37,17 @@ class TokenizerTest(unittest.TestCase):
         self.assertEqual(kinds_and_values("SELECT 1 -- um comentário\n;"),
                          [("KEYWORD", "SELECT"), ("NUMBER", 1), ("SYMBOL", ";"), ("EOF", None)])
 
+    def test_identificador_com_aspa_dupla_escapada(self):
+        token = tokenize('"Tatu ""Bola"""')[0]
+        self.assertEqual((token.kind, token.value), ("IDENT", 'Tatu "Bola"'))
+        self.assertEqual(token.pos, 0)
+
+    def test_identificador_escapado_sem_fechamento_aponta_inicio(self):
+        with self.assertRaises(TatuSyntaxError) as ctx:
+            tokenize('SELECT "Tatu ""Bola')
+        self.assertEqual(ctx.exception.pos, 7)
+        self.assertIn("Identificador sem aspa", str(ctx.exception))
+
     def test_simbolos_de_dois_caracteres(self):
         values = [t.value for t in tokenize("<= <> != || <")][:-1]
         self.assertEqual(values, ["<=", "<>", "!=", "||", "<"])

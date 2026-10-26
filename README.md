@@ -7,7 +7,7 @@
   <a href="https://github.com/AlefRP/tatu_db/releases/latest"><img alt="Versão" src="https://img.shields.io/github/v/release/AlefRP/tatu_db?label=vers%C3%A3o&color=8C5A2B"></a>
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white">
   <img alt="Zero dependências" src="https://img.shields.io/badge/depend%C3%AAncias-zero-8C5A2B">
-  <img alt="88 testes" src="https://img.shields.io/badge/testes-88%20passando-6E9B3A">
+  <img alt="117 testes" src="https://img.shields.io/badge/testes-117%20passando-6E9B3A">
   <img alt="Windows, macOS e Linux" src="https://img.shields.io/badge/roda%20em-Windows%20%C2%B7%20macOS%20%C2%B7%20Linux-6FA8C7">
   <a href="LICENSE"><img alt="Licença MIT" src="https://img.shields.io/badge/licen%C3%A7a-MIT-E0A96D"></a>
 </p>
@@ -20,6 +20,7 @@
 <p align="center">
   <a href="#-instalação">📦 Instalação</a> ·
   <a href="#-começando">🚀 Começando</a> ·
+  <a href="docs/toca.md">🦔 Toca: cliente gráfico</a> ·
   <a href="#-o-sql-que-o-tatu-entende">💬 SQL</a> ·
   <a href="#-por-dentro">🔬 Por dentro</a> ·
   <a href="docs/README.md">📚 Trilha de aprendizado</a> ·
@@ -57,6 +58,28 @@ peças de um banco "de gente grande" — cada uma num arquivo, cada uma explicad
 | 💾 | **Persistência** — um arquivo `.tatu` (JSON legível), gravado de forma atômica | `python -m tatu zoo.tatu` |
 | 🛡️ | **Parâmetros `?`** — nada de SQL injection | `db.execute("... WHERE id = ?", (3,))` |
 | 🖥️ | **Shell colorido** — tabelas desenhadas, erros com setinha `^` apontando o problema | `.tables`, `.schema`, `.demo` |
+| 🦔 | **Toca** — cliente gráfico com editor SQL, tabelas, resultados, estrutura, histórico e transações | `python -m tatu.toca` |
+
+## 🦔 Toca: cliente gráfico
+
+O **Toca** é a interface gráfica própria do Tatu DB, feita em Python com Tkinter. Tem ícone próprio,
+temas claro e escuro, editor SQL com cores, navegador de tabelas e grade de resultados.
+
+Na pasta do projeto:
+
+```bash
+python -m tatu.toca                  # abre um laboratório de exemplo em memória
+python -m tatu.toca zoo.tatu         # abre um banco salvo no computador
+```
+
+Depois de instalar esta cópia com `pip install -e .`, também pode usar `toca` ou `toca zoo.tatu`.
+**Ctrl+Enter** executa o SQL selecionado, ou todo o editor quando não há seleção.
+No computador, bancos salvos em `.tatu` permanecem no disco depois de fechar o aplicativo.
+
+![Toca em Python: editor SQL, navegador de tabelas e resultados](docs/assets/toca-python.jpg)
+
+Veja o [guia do Toca](docs/toca.md) para abrir e salvar bancos, usar transações e exportar CSV.
+O cliente usa o motor do próprio projeto, com a mesma [referência SQL](docs/08-referencia-sql.md).
 
 ## 📦 Instalação
 
@@ -274,9 +297,11 @@ tatu_db/
 │   ├── database.py        🔁 conexão e transações
 │   ├── result.py          📋 resultado e tabelas desenhadas
 │   ├── repl.py            🖥️ o shell interativo
+│   ├── toca.py            🦔 o cliente gráfico em Tkinter
+│   ├── toca_session.py    🧰 sessão, arquivos e resultados do cliente
 │   ├── demo.py            🌵 dados de exemplo
 │   └── errors.py          🚨 exceções
-├── tests/                 🧪 88 testes (unittest)
+├── tests/                 🧪 117 testes (unittest)
 ├── docs/                  📚 trilha de aprendizado, instalação, FAQ e ilustrações
 ├── examples/              🐍 exemplo de uso pelo Python
 ├── scripts/               🛠️ instaladores (install.sh, install.ps1), versão, notas e verificador das docs

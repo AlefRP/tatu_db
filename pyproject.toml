@@ -34,8 +34,14 @@ Changelog = "https://github.com/AlefRP/tatu_db/blob/main/CHANGELOG.md"
 [project.scripts]
 tatu = "tatu.repl:main"
 
+[project.gui-scripts]
+toca = "tatu.toca:main"
+
 [tool.setuptools]
 packages = ["tatu"]
+
+[tool.setuptools.package-data]
+tatu = ["assets/*.png"]
 
 [tool.setuptools.dynamic]
 version = { attr = "tatu.__version__" }  # a versão mora só em tatu/__init__.py

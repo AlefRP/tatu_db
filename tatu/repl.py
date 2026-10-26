@@ -302,9 +302,15 @@ def main(argv=None) -> int:
         prog="tatu", description="Tatu DB — um banco de dados relacional feito do zero, para aprender.")
     parser.add_argument("arquivo", nargs="?",
                         help="arquivo do banco (.tatu); sem ele, o banco fica na memória")
-    parser.add_argument("-c", "--comando", help="executa este SQL e sai")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("-c", "--comando", help="executa este SQL e sai")
+    mode.add_argument("--gui", action="store_true", help="abre o cliente gráfico Toca")
     parser.add_argument("--version", action="version", version=f"Tatu DB {__version__}")
     args = parser.parse_args(argv)
+
+    if args.gui:
+        from .toca import main as gui_main
+        return gui_main([args.arquivo] if args.arquivo else [])
 
     try:
         sys.stdout.reconfigure(errors="replace")
